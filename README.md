@@ -82,10 +82,14 @@ Pathfinder is being developed using:
 
 ## Current Status
 
-**Pre-development**
+**Repository foundation complete**
 
-Current ticket:
+Completed ticket:
 
 > **PF-001 — Repository & Project Foundation**
 
-Nothing beyond the repository foundation has been implemented yet.
+Next ticket:
+
+> **PF-002 — Docker Development Environment**
+
+The repository foundation is established. Application infrastructure has not yet been implemented.
