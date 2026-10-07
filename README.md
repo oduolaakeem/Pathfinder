@@ -80,16 +80,47 @@ Pathfinder is being developed using:
 * Explicit planning, review, and documentation
 * Intentional Codex/agentic development workflows
 
+## Docker Development Environment
+
+Pathfinder uses Docker for a reproducible local development environment.
+
+Current foundation:
+
+- Ruby 4.0.7
+- Docker Desktop with WSL 2 on Windows
+- Docker Compose
+
+Build the development image:
+
+```bash
+docker compose build
+```
+
+Verify the container:
+
+```bash
+docker compose run --rm app
+```
+
+Expected output includes:
+
+```text
+ruby 4.0.7
+```
+
+The Rails application, PostgreSQL configuration, RSpec setup, and frontend will be introduced in later tickets.
+
 ## Current Status
 
-**Repository foundation complete**
+**Docker development foundation complete**
 
-Completed ticket:
+Completed tickets:
 
-> **PF-001 — Repository & Project Foundation**
+- **PF-001 — Repository & Project Foundation**
+- **PF-002 — Docker Development Environment**
 
 Next ticket:
 
-> **PF-002 — Docker Development Environment**
+> **PF-003 — Rails 8 API Foundation**
 
-The repository foundation is established. Application infrastructure has not yet been implemented.
+The repository and Docker development foundations are established. The Rails application has not yet been generated.
