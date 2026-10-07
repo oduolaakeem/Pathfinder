@@ -35,3 +35,12 @@ pnpm-debug.log*
 
 # Local tooling
 .direnv/
+backend/config/master.key
+backend/log/*
+!backend/log/.keep
+backend/tmp/*
+!backend/tmp/.keep
+backend/tmp/pids/*
+!backend/tmp/pids/.keep
+backend/storage/*
+!backend/storage/.keep
