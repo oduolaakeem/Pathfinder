@@ -1,0 +1,4 @@
+# Keep Linux/container executable scripts and configuration files on LF.
+backend/bin/* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
