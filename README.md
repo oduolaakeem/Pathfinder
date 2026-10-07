@@ -112,15 +112,16 @@ The Rails application, PostgreSQL configuration, RSpec setup, and frontend will 
 
 ## Current Status
 
-**Docker development foundation complete**
+**Rails API foundation complete**
 
 Completed tickets:
 
 - **PF-001 — Repository & Project Foundation**
 - **PF-002 — Docker Development Environment**
+- **PF-003 — Rails 8 API Foundation**
 
 Next ticket:
 
-> **PF-003 — Rails 8 API Foundation**
+> **PF-004 — PostgreSQL Configuration**
 
-The repository and Docker development foundations are established. The Rails application has not yet been generated.
+The repository, Docker development environment, and Rails API foundation are established. PostgreSQL configuration has not yet been introduced.
