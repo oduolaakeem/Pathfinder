@@ -1,127 +1,239 @@
 # Pathfinder
 
-**AI-powered learning-to-opportunity platform**
+Pathfinder is an AI-powered learning-to-opportunity platform designed to help self-directed technical learners turn a career goal into a clear, achievable learning journey.
 
-Pathfinder helps learners answer one core question:
+Many learners know what they want to become but struggle to understand what skills they need, what they should learn next, and whether the work they are doing is actually moving them closer to their goal.
 
-> **From where I am now, how do I get to where I want to be?**
+Pathfinder helps bridge that gap.
 
-## Product Promise
+A learner defines a career goal and shares their current skills. Pathfinder identifies relevant skill gaps and creates a personalized learning path broken into manageable next steps. As the learner completes projects and other practical work, they can provide evidence of their progress and receive AI-assisted feedback. Their learning path can then adapt based on what they have demonstrated rather than simply following a fixed curriculum.
 
-> **Pathfinder tells you what you're missing, what to learn next, and how to prove you've learned it.**
+> Pathfinder tells you what you're missing, what to learn next, and how to prove you've learned it.
 
-## MVP Focus
+## Initial Focus
 
-The initial MVP is focused on **self-directed technical learners**, beginning with software-development learners.
+The initial proof of concept focuses on self-directed software-development learners.
 
-The product will help a learner:
+The first vertical slice will demonstrate the journey from:
 
-1. Define a concrete technical career goal.
-2. Describe their current skills and experience.
-3. Identify the skills they are missing.
-4. Generate a personalized learning path.
-5. Practice through learning activities and projects.
-6. Submit evidence of learning.
-7. Receive AI evaluation and feedback.
-8. Get an adaptive next action.
+1. Creating a learning goal
+2. Adding current skills
+3. Analyzing the skill gap
+4. Generating a personalized learning path
+5. Returning that path to the learner
 
-## Core Product Loop
+## Architecture
+
+Pathfinder is structured as a separate frontend and backend:
 
 ```text
-GOAL
-  ↓
-CURRENT SKILLS
-  ↓
-SKILL-GAP ANALYSIS
-  ↓
-PERSONALIZED LEARNING PATH
-  ↓
-LEARNING / PRACTICE
-  ↓
-EVIDENCE
-  ↓
-AI EVALUATION
-  ↓
-NEXT ACTION
-  ↓
-(updated learning state)
+React + TypeScript
+        |
+     HTTP/JSON
+        |
+Rails 8 API
+        |
+   PostgreSQL
 ```
 
-## Technology Direction
+The Rails API currently lives under:
+
+```text
+backend/
+```
+
+The frontend will be introduced in a later ticket.
+
+## Technology Stack
 
 ### Backend
 
-* Ruby
-* Rails 8
-* API-first architecture
-* PostgreSQL
-* RSpec
-* Docker
+- Ruby 4.0.7
+- Rails 8.1.4
+- PostgreSQL 17
+- RSpec planned for the test foundation
 
 ### Frontend
 
-* React
-* TypeScript
+- React
+- TypeScript
 
 ### AI
 
-* OpenAI API
-* Codex throughout the software-development workflow
+- OpenAI API
+- Codex-assisted development workflow
 
-## Development Approach
+### Development Environment
 
-Pathfinder is being developed using:
+- Docker
+- Docker Compose
 
-* Test-driven development where practical
-* Small vertical slices
-* Clean Git workflows
-* Dockerized development
-* Automated testing
-* Explicit planning, review, and documentation
-* Intentional Codex/agentic development workflows
+## Repository Structure
+
+```text
+pathfinder/
+├── backend/
+├── .dockerignore
+├── .gitattributes
+├── .gitignore
+├── AGENTS.md
+├── compose.yaml
+├── Dockerfile
+└── README.md
+```
+
+The repository will expand as additional Pathfinder modules are implemented.
+
+## Development Workflow
+
+Pathfinder follows a ticket-driven development workflow:
+
+```text
+Plan → Test/Verify → Implement → Verify → Review → Commit
+```
+
+Each ticket should:
+
+1. Identify the intended user or engineering outcome.
+2. Define acceptance criteria.
+3. Inspect the existing implementation before making changes.
+4. Implement the smallest useful change.
+5. Verify the change.
+6. Review the resulting diff.
+7. Update relevant documentation.
+8. Commit the completed ticket.
+
+Feature work is developed on dedicated branches and merged into `develop` through pull requests.
 
 ## Docker Development Environment
 
-Pathfinder uses Docker for a reproducible local development environment.
+Pathfinder uses Docker to provide a reproducible local development environment.
 
-Current foundation:
+The current environment includes:
 
 - Ruby 4.0.7
-- Docker Desktop with WSL 2 on Windows
+- Rails 8.1.4
+- PostgreSQL 17
 - Docker Compose
 
-Build the development image:
+Build the application image:
 
 ```bash
 docker compose build
 ```
 
-Verify the container:
+Start PostgreSQL:
 
 ```bash
-docker compose run --rm app
+docker compose up -d db
 ```
 
-Expected output includes:
+View running services:
+
+```bash
+docker compose ps
+```
+
+Stop the environment:
+
+```bash
+docker compose down
+```
+
+PostgreSQL data is stored in a named Docker volume so development data can persist across container restarts.
+
+## PostgreSQL
+
+Pathfinder uses PostgreSQL for Rails development and test environments.
+
+The Docker Compose environment provides the PostgreSQL service as:
 
 ```text
-ruby 4.0.7
+db
 ```
 
-The Rails application, PostgreSQL configuration, RSpec setup, and frontend will be introduced in later tickets.
+The development and test databases are:
+
+```text
+pathfinder_development
+pathfinder_test
+```
+
+Prepare the databases:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend app \
+  bin/rails db:prepare
+```
+
+Verify the active database adapter:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend app \
+  bin/rails runner 'puts ActiveRecord::Base.connection.adapter_name'
+```
+
+Expected output:
+
+```text
+PostgreSQL
+```
+
+Production database configuration is supplied through `DATABASE_URL`. Production credentials must not be stored in the repository.
+
+> When using Git Bash on Windows, `MSYS_NO_PATHCONV=1` prevents Git Bash from converting Linux container paths such as `/app/backend` into Windows paths.
+
+## Backend
+
+The Rails API is located in:
+
+```text
+backend/
+```
+
+Verify the Rails version:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend app \
+  bin/rails --version
+```
+
+Verify that the Rails application boots:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend app \
+  bin/rails runner 'puts "Pathfinder Rails API booted: #{Rails.version}"'
+```
+
+## Security and Configuration
+
+Secrets and private credentials must not be committed to the repository.
+
+In particular:
+
+```text
+backend/config/master.key
+```
+
+is ignored by Git.
+
+The encrypted Rails credentials file may be version controlled while the corresponding master key remains local.
+
+Local Docker database credentials are development-only. Production database credentials must be supplied through environment configuration.
 
 ## Current Status
 
-**Rails API foundation complete**
+**PostgreSQL configuration complete**
 
 Completed tickets:
 
 - **PF-001 — Repository & Project Foundation**
 - **PF-002 — Docker Development Environment**
 - **PF-003 — Rails 8 API Foundation**
+- **PF-004 — PostgreSQL Configuration**
 
 Next ticket:
 
-> **PF-004 — PostgreSQL Configuration**
+> **PF-005 — RSpec / Test Foundation**
 
-The repository, Docker development environment, and Rails API foundation are established. PostgreSQL configuration has not yet been introduced.
+The repository, Docker development environment, Rails API foundation, and PostgreSQL configuration are established.
