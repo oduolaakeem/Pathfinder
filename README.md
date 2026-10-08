@@ -51,7 +51,7 @@ The frontend will be introduced in a later ticket.
 - Ruby 4.0.7
 - Rails 8.1.4
 - PostgreSQL 17
-- RSpec planned for the test foundation
+- RSpec 3.13 with rspec-rails 7.1
 
 ### Frontend
 
@@ -183,6 +183,32 @@ Production database configuration is supplied through `DATABASE_URL`. Production
 
 > When using Git Bash on Windows, `MSYS_NO_PATHCONV=1` prevents Git Bash from converting Linux container paths such as `/app/backend` into Windows paths.
 
+## Automated Testing
+
+Pathfinder uses RSpec for automated backend testing.
+
+RSpec runs inside Docker against the PostgreSQL test database (`pathfinder_test`), keeping tests isolated from the development database.
+
+Run the complete backend test suite from the repository root:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
+  -e RAILS_ENV=test app \
+  bundle exec rspec
+```
+
+Run an individual test file:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
+  -e RAILS_ENV=test app \
+  bundle exec rspec spec/integration/database_connection_spec.rb
+```
+
+The initial smoke test verifies that Rails runs in the test environment and connects to PostgreSQL using `pathfinder_test`.
+
+The test foundation was established in **PF-005 — RSpec / Test Foundation**.
+
 ## Backend
 
 The Rails API is located in:
@@ -223,7 +249,7 @@ Local Docker database credentials are development-only. Production database cred
 
 ## Current Status
 
-**PostgreSQL configuration complete**
+**RSpec / Test Foundation complete**
 
 Completed tickets:
 
@@ -231,9 +257,10 @@ Completed tickets:
 - **PF-002 — Docker Development Environment**
 - **PF-003 — Rails 8 API Foundation**
 - **PF-004 — PostgreSQL Configuration**
+- **PF-005 — RSpec / Test Foundation**
 
 Next ticket:
 
-> **PF-005 — RSpec / Test Foundation**
+> **PF-006 — React + TypeScript Frontend Foundation**
 
-The repository, Docker development environment, Rails API foundation, and PostgreSQL configuration are established.
+The repository, Docker development environment, Rails API, PostgreSQL configuration, and automated backend test foundation are established.

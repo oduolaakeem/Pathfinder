@@ -11,10 +11,9 @@ The backend provides the application and API layer for Pathfinder and will expos
 - API-only Rails configuration
 - PostgreSQL 17
 - Docker-based development environment
+- RSpec 3.13 with rspec-rails 7.1
 
 Development and test environments use PostgreSQL through Docker Compose.
-
-RSpec will be introduced in **PF-005 — RSpec / Test Foundation**.
 
 ## Database
 
@@ -101,6 +100,32 @@ Expected output:
 ```text
 Pathfinder Rails API booted: 8.1.4
 ```
+
+## Automated Testing
+
+The backend uses RSpec for automated testing.
+
+Tests run against the PostgreSQL test database (`pathfinder_test`).
+
+From the repository root, run the complete test suite:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
+  -e RAILS_ENV=test app \
+  bundle exec rspec
+```
+
+To run an individual spec:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
+  -e RAILS_ENV=test app \
+  bundle exec rspec spec/integration/database_connection_spec.rb
+```
+
+The initial integration smoke test verifies the Rails test environment, PostgreSQL adapter, and test database connection.
+
+RSpec was configured in **PF-005 — RSpec / Test Foundation**.
 
 ## Windows Git Bash
 
