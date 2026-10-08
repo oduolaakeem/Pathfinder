@@ -31,18 +31,16 @@ React + TypeScript
         |
      HTTP/JSON
         |
-Rails 8 API
+   Rails 8 API
         |
    PostgreSQL
 ```
 
-The Rails API currently lives under:
+The Rails API is located in `backend/`.
 
-```text
-backend/
-```
+The React + TypeScript frontend is located in `frontend/`.
 
-The frontend will be introduced in a later ticket.
+Both application foundations are established. HTTP/JSON integration between the frontend and backend will be implemented in a later ticket.
 
 ## Technology Stack
 
@@ -55,8 +53,11 @@ The frontend will be introduced in a later ticket.
 
 ### Frontend
 
-- React
-- TypeScript
+- React 19
+- TypeScript 6
+- Vite 8
+- ESLint
+- Node.js 24
 
 ### AI
 
@@ -73,6 +74,12 @@ The frontend will be introduced in a later ticket.
 ```text
 pathfinder/
 ├── backend/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── README.md
 ├── .dockerignore
 ├── .gitattributes
 ├── .gitignore
@@ -114,9 +121,11 @@ The current environment includes:
 - Ruby 4.0.7
 - Rails 8.1.4
 - PostgreSQL 17
+- Node.js 24
+- React + TypeScript frontend with Vite
 - Docker Compose
 
-Build the application image:
+Build the application images:
 
 ```bash
 docker compose build
@@ -126,6 +135,12 @@ Start PostgreSQL:
 
 ```bash
 docker compose up -d db
+```
+
+Start the frontend:
+
+```bash
+docker compose up -d frontend
 ```
 
 View running services:
@@ -141,6 +156,8 @@ docker compose down
 ```
 
 PostgreSQL data is stored in a named Docker volume so development data can persist across container restarts.
+
+The frontend uses a separate Docker-managed `/app/node_modules` volume to avoid conflicts between Linux and Windows dependencies.
 
 ## PostgreSQL
 
@@ -209,6 +226,85 @@ The initial smoke test verifies that Rails runs in the test environment and conn
 
 The test foundation was established in **PF-005 — RSpec / Test Foundation**.
 
+## Frontend
+
+The React + TypeScript application is located in:
+
+```text
+frontend/
+```
+
+The frontend uses Vite for development and production builds.
+
+### Docker Frontend Development
+
+Build the frontend Docker image from the repository root:
+
+```bash
+docker compose build frontend
+```
+
+Start the frontend development server:
+
+```bash
+docker compose up -d frontend
+```
+
+Open the application in your browser:
+
+http://localhost:5173/
+
+Verify the frontend container:
+
+```bash
+docker compose ps frontend
+```
+
+View the frontend logs:
+
+```bash
+docker compose logs --tail=30 frontend
+```
+
+Run the production build:
+
+```bash
+docker compose exec frontend npm run build
+```
+
+Run ESLint:
+
+```bash
+docker compose exec frontend npm run lint
+```
+
+### Local Frontend Development
+
+Node.js 24 and npm are required.
+
+From the repository root:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open http://localhost:5173/ in your browser.
+
+To run local verification:
+
+```bash
+npm run build
+npm run lint
+```
+
+The frontend currently displays the default Vite + React starter interface.
+
+Pathfinder-specific learner interfaces and Rails API integration will be implemented in subsequent tickets.
+
+See `frontend/README.md` for additional setup and development instructions.
+
 ## Backend
 
 The Rails API is located in:
@@ -249,7 +345,7 @@ Local Docker database credentials are development-only. Production database cred
 
 ## Current Status
 
-**RSpec / Test Foundation complete**
+**React + TypeScript Frontend Foundation established**
 
 Completed tickets:
 
@@ -259,8 +355,14 @@ Completed tickets:
 - **PF-004 — PostgreSQL Configuration**
 - **PF-005 — RSpec / Test Foundation**
 
+Current ticket:
+
+- **PF-006 — React + TypeScript Frontend Foundation** (verification passed; pending review and merge)
+
 Next ticket:
 
-> **PF-006 — React + TypeScript Frontend Foundation**
+> **PF-007 — AGENTS.md**
 
-The repository, Docker development environment, Rails API, PostgreSQL configuration, and automated backend test foundation are established.
+The repository now contains the Rails API, PostgreSQL configuration, RSpec test foundation, and React + TypeScript frontend.
+
+Both backend and frontend development environments are supported through Docker Compose.
