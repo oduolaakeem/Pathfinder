@@ -8,7 +8,7 @@ Pathfinder helps bridge that gap.
 
 The planned journey lets a learner define a career goal and share their current skills, then receive skill-gap analysis, a personalized learning path, and AI-assisted feedback on practical work. These AI capabilities are not implemented yet.
 
-Currently, PF-008 lets a learner enter a software-development career goal in React, save it through the Rails API to PostgreSQL, and see the saved ID and description returned by Rails. The form provides validation feedback, a saving state, and a 500-character counter using Unicode code points.
+PF-008 and PF-009 implement this journey: define and save a software-development career goal → describe current technical skills → save → view confirmation. React displays the persisted descriptions returned by Rails, with accessible validation feedback, saving states, and Unicode code-point counters. Goals allow 500 code points; current skills allow 2,000.
 
 > Pathfinder tells you what you're missing, what to learn next, and how to prove you've learned it.
 
@@ -229,7 +229,7 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
   bundle exec rspec spec/integration/database_connection_spec.rb
 ```
 
-The suite covers PostgreSQL connectivity, goal creation and validation, Unicode boundaries, and request/SQL log redaction. The development-logging regression runs against the test database and rolls back its synthetic record.
+The suite covers PostgreSQL connectivity, goal and current-skills creation and validation, Unicode boundaries, protected attributes, database constraints, and request/SQL log redaction. Development-logging regressions run against the test database and roll back their synthetic records.
 
 The test foundation was established in **PF-005 — RSpec / Test Foundation**.
 
@@ -291,7 +291,7 @@ Run the frontend regression tests using Node's built-in test runner:
 docker compose exec frontend npm test
 ```
 
-These tests cover Unicode character boundaries and nonblank client validation.
+These tests cover goal and skills Unicode boundaries, nonblank client validation, and the current-skills API client's requests, persisted response parsing, and error handling.
 
 ### Local Frontend Development
 
@@ -315,7 +315,7 @@ npm run build
 npm run lint
 ```
 
-The integrated goal-saving flow requires Docker development: the existing Vite proxy uses the Docker service hostname `app`, which is not available to a host-local Vite process. Local Node commands remain useful for frontend tests, linting, and builds.
+The integrated goal-and-skills saving flow requires Docker development: the existing Vite proxy uses the Docker service hostname `app`, which is not available to a host-local Vite process. Local Node commands remain useful for frontend tests, linting, and builds.
 
 See `frontend/README.md` for additional setup and development instructions.
 
@@ -369,6 +369,33 @@ Non-string descriptions return `"must be a string"`; descriptions over the limit
 
 Only `description` is permitted; client-supplied IDs and timestamps are ignored.
 
+## Current Skills API
+
+After saving a goal, send JSON to `POST /api/goals/:goal_id/current_skills`, replacing `:goal_id` with the saved goal's ID. Use `Content-Type: application/json`; the endpoint is available through the same Vite proxy or directly through Rails.
+
+```json
+{"current_skills":{"description":"Ruby, SQL, Git; built a Rails application"}}
+```
+
+Success returns HTTP **201 Created** with server-generated IDs and the persisted description:
+
+```json
+{"current_skills":{"id":1,"goal_id":1,"description":"Ruby, SQL, Git; built a Rails application"}}
+```
+
+Each goal permits one current-skills submission. Description must be a nonblank string of at most **2,000 Unicode code points**, using the same counting rule as goals. Only `description` is permitted; the goal association comes from the URL and client-supplied IDs and timestamps cannot override server-controlled values.
+
+| Status | Condition | JSON response |
+| --- | --- | --- |
+| 400 | Missing or malformed `current_skills` object | `{"errors":{"current_skills":["is required"]}}` |
+| 422 | Missing, empty, or whitespace-only description | `{"errors":{"description":["can't be blank"]}}` |
+| 422 | Explicit non-string description, including `null` | `{"errors":{"description":["must be a string"]}}` |
+| 422 | More than 2,000 code points | `{"errors":{"description":["is too long (maximum is 2000 characters)"]}}` |
+| 404 | Unknown goal ID | `{"errors":{"goal":["not found"]}}` |
+| 409 | Skills already submitted for this goal | `{"errors":{"current_skills":["already submitted for this goal"]}}` |
+
+Failures do not create an additional record. The database unique index also prevents duplicate submissions from racing inserts.
+
 ## Security and Configuration
 
 Secrets and private credentials must not be committed to the repository.
@@ -385,15 +412,17 @@ The encrypted Rails credentials file may be version controlled while the corresp
 
 Local Docker database credentials are development-only. Production database credentials must be supplied through environment configuration.
 
-Goal descriptions are filtered from Rails request parameters and Active Record SQL bind logs. Development query tags are disabled to preserve prepared statements and bind filtering while retaining application and SQL logging.
+Goal and current-skills descriptions are filtered from Rails request parameters and Active Record SQL bind logs. Development query tags are disabled to preserve prepared statements and bind filtering while retaining application and SQL logging.
 
 ## Current Limitations
 
-There is no authentication, goal retrieval, goal listing/editing/deletion, AI analysis, or learning-path generation. The saved goal display lasts for the current page session; reloading does not retrieve previously saved goals. This is a local development proof of concept.
+This is a localhost-only proof of concept with no authentication or authorization. A goal ID does not prove ownership; the endpoint must not be exposed as a production multi-user service without access controls.
+
+Goal/skills retrieval and editing, goal listing/deletion, AI analysis or feedback, and learning-path generation remain deferred. Saved goal context and confirmations exist only in the current UI session. Refreshing does not restore the skills form or saved skills, although persisted records remain in PostgreSQL.
 
 ## Current Status
 
-**PF-008 — Learner Goal Definition implemented; final approval, commit, and merge pending.**
+**PF-009 — Learner Current Skills implemented; awaiting merge.**
 
 Completed tickets:
 
@@ -402,11 +431,14 @@ Completed tickets:
 - **PF-003 — Rails 8 API Foundation**
 - **PF-004 — PostgreSQL Configuration**
 - **PF-005 — RSpec / Test Foundation**
+- **PF-008 — Learner Goal Definition (merged into develop)**
 
 Current ticket:
 
-- **PF-008 — Learner Goal Definition**
+- **PF-009 — Learner Current Skills**
 
-The repository contains the integrated React goal form, Rails API, PostgreSQL persistence, and backend/frontend regression tests. Repository engineering instructions are in `AGENTS.md`.
+The repository contains the integrated React goal-to-skills flow, Rails API, PostgreSQL persistence, and backend/frontend regression tests. Latest reported PF-009 verification: 44 backend examples and 17 frontend tests passing, frontend lint and production build passing, and 6/6 manual browser acceptance checks passing. Coverage includes request validation, database constraints, privacy logging, and the journey through the Vite proxy. Concurrent duplicate requests have not been exercised; sequential duplicates and database uniqueness are covered.
+
+Repository engineering instructions are in `AGENTS.md`.
 
 Both backend and frontend development environments are supported through Docker Compose.
