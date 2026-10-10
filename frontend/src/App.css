@@ -24,6 +24,8 @@ textarea:disabled { background: #f2f3ed; }
 .saving-status:empty { display: none; }
 .saved-card { margin-top: 24px; padding: 28px 32px; background: #eaf0e1; border: 1px solid #cddbc3; border-radius: 18px; }
 .saved-description { margin: 16px 0 12px; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
+.skills-card { margin-top: 24px; }
+.skills-confirmation { margin-top: 24px; }
 @media (max-width: 480px) {
   .page { padding: 24px 16px 40px; }
   .brand { margin-bottom: 40px; }

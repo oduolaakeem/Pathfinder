@@ -4,6 +4,7 @@ import { createGoal } from './api/goals'
 import type { Goal } from './api/goals'
 import { countGoalCharacters, GOAL_DESCRIPTION_LIMIT, validateGoalDescription } from './goalDescription'
 import './App.css'
+import CurrentSkillsForm from './CurrentSkillsForm'
 
 function App() {
   const [description, setDescription] = useState('')
@@ -97,6 +98,7 @@ function App() {
           </section>
         )}
       </div>
+      {savedGoal && <CurrentSkillsForm key={savedGoal.id} goalId={savedGoal.id} />}
     </main>
   )
 }
