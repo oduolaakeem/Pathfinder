@@ -285,4 +285,76 @@ Keep commits:
 - meaningful;
 - related to one logical change.
 
-Prefer commit messages that clearly
+Prefer commit messages that clearly describe the purpose of the change.
+
+Use conventional, descriptive commit messages where practical, for example:
+
+- `feat: add learner goal creation`
+- `test: cover skill gap analysis`
+- `fix: validate learning path response`
+- `docs: complete repository agent instructions`
+
+### Pull Requests
+
+For each completed feature ticket:
+
+1. Push the feature branch to the remote repository.
+2. Open a pull request targeting `develop`.
+3. Describe the problem, implementation, and verification performed.
+4. Review the changes for correctness, security, and unnecessary complexity.
+5. Merge only after the ticket's acceptance criteria are satisfied.
+6. Return to `develop`, pull the merged changes, and remove the completed feature branch when appropriate.
+
+Do not commit feature work directly to `main` or `develop`.
+
+---
+
+## 13. Verification Requirements
+
+Before declaring a ticket complete:
+
+- Run relevant automated tests.
+- Run linting or formatting checks where applicable.
+- Verify the intended user-facing behavior.
+- Inspect `git diff` for unintended changes.
+- Confirm that no secrets or sensitive data are included.
+- Check that documentation reflects significant behavior changes.
+- Record any tests that could not be executed and explain why.
+
+Do not claim that a test or verification step passed unless it was actually executed successfully.
+
+---
+
+## 14. Definition of Done
+
+A Pathfinder ticket is complete when:
+
+1. Its acceptance criteria are satisfied.
+2. Relevant tests pass.
+3. The implementation has been reviewed.
+4. Security and architecture implications have been considered.
+5. Required documentation is updated.
+6. Changes are committed to the ticket's feature branch.
+7. A pull request has been reviewed and merged into `develop`.
+8. The local `develop` branch is synchronized with the remote.
+
+If any requirement cannot be met, explicitly document the outstanding work.
+
+---
+
+## 15. Working With AI Coding Agents
+
+AI coding agents must:
+
+- Read this file before making repository changes.
+- Identify the active ticket and its scope.
+- Explain the intended implementation before substantial changes.
+- Make focused, reviewable changes.
+- Prefer incremental implementation over large rewrites.
+- Use tests and verification to support claims of correctness.
+- Ask for clarification when requirements are ambiguous.
+- Avoid modifying unrelated files.
+- Avoid committing, pushing, or merging without explicit authorization.
+- Report what changed, what was verified, and what remains incomplete.
+
+The human developer retains responsibility for architectural decisions, security-sensitive changes, and final approval.
