@@ -2,7 +2,7 @@
 
 Rails 8 API application for Pathfinder.
 
-The backend provides the application and API layer for Pathfinder and will expose the functionality used by the React + TypeScript frontend.
+The backend validates and persists learner goals in PostgreSQL through `POST /api/goals`, used by the React + TypeScript frontend. See the [API contract](../README.md#goal-creation-api).
 
 ## Current Foundation
 
@@ -75,6 +75,14 @@ PostgreSQL
 
 ## Verify the Backend
 
+After preparing the database, start the development server from the repository root:
+
+```bash
+docker compose up -d app
+```
+
+Rails is available at http://localhost:3000/ with a health check at `/up`. Its host port is restricted to loopback.
+
 Verify the Rails version:
 
 ```bash
@@ -123,7 +131,9 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
   bundle exec rspec spec/integration/database_connection_spec.rb
 ```
 
-The initial integration smoke test verifies the Rails test environment, PostgreSQL adapter, and test database connection.
+The suite verifies the Rails test environment and PostgreSQL connection, goal persistence and validation, Unicode boundaries, and request/SQL logging privacy. The development-logging regression uses the test database and rolls back its synthetic record.
+
+Authentication, goal retrieval, AI analysis, and learning-path generation are not implemented.
 
 RSpec was configured in **PF-005 — RSpec / Test Foundation**.
 

@@ -6,7 +6,9 @@ Many learners know what they want to become but struggle to understand what skil
 
 Pathfinder helps bridge that gap.
 
-A learner defines a career goal and shares their current skills. Pathfinder identifies relevant skill gaps and creates a personalized learning path broken into manageable next steps. As the learner completes projects and other practical work, they can provide evidence of their progress and receive AI-assisted feedback. Their learning path can then adapt based on what they have demonstrated rather than simply following a fixed curriculum.
+The planned journey lets a learner define a career goal and share their current skills, then receive skill-gap analysis, a personalized learning path, and AI-assisted feedback on practical work. These AI capabilities are not implemented yet.
+
+Currently, PF-008 lets a learner enter a software-development career goal in React, save it through the Rails API to PostgreSQL, and see the saved ID and description returned by Rails. The form provides validation feedback, a saving state, and a 500-character counter using Unicode code points.
 
 > Pathfinder tells you what you're missing, what to learn next, and how to prove you've learned it.
 
@@ -14,7 +16,7 @@ A learner defines a career goal and shares their current skills. Pathfinder iden
 
 The initial proof of concept focuses on self-directed software-development learners.
 
-The first vertical slice will demonstrate the journey from:
+The broader planned journey is:
 
 1. Creating a learning goal
 2. Adding current skills
@@ -40,7 +42,7 @@ The Rails API is located in `backend/`.
 
 The React + TypeScript frontend is located in `frontend/`.
 
-Both application foundations are established. HTTP/JSON integration between the frontend and backend will be implemented in a later ticket.
+Vite proxies `/api` requests to `http://app:3000` on Docker's internal network. Rails owns validation and persistence.
 
 ## Technology Stack
 
@@ -137,11 +139,16 @@ Start PostgreSQL:
 docker compose up -d db
 ```
 
-Start the frontend:
+Prepare the databases on first setup or after new migrations, then start Rails and Vite:
 
 ```bash
-docker compose up -d frontend
+MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend app bin/rails db:prepare
+docker compose up -d app frontend
 ```
+
+Open the React interface at [http://localhost:5173/](http://localhost:5173/). Rails runs at [http://localhost:3000/](http://localhost:3000/), with a health check at `/up`. Both published ports are restricted to host loopback. If PostgreSQL is still starting, wait until it is ready before running `db:prepare`.
+
+The command examples use Git Bash syntax. In PowerShell, omit `MSYS_NO_PATHCONV=1`; it is only needed for Git Bash path conversion.
 
 View running services:
 
@@ -222,7 +229,7 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
   bundle exec rspec spec/integration/database_connection_spec.rb
 ```
 
-The initial smoke test verifies that Rails runs in the test environment and connects to PostgreSQL using `pathfinder_test`.
+The suite covers PostgreSQL connectivity, goal creation and validation, Unicode boundaries, and request/SQL log redaction. The development-logging regression runs against the test database and rolls back its synthetic record.
 
 The test foundation was established in **PF-005 — RSpec / Test Foundation**.
 
@@ -247,12 +254,12 @@ docker compose build frontend
 Start the frontend development server:
 
 ```bash
-docker compose up -d frontend
+docker compose up -d app frontend
 ```
 
 Open the application in your browser:
 
-http://localhost:5173/
+[http://localhost:5173/](http://localhost:5173/)
 
 Verify the frontend container:
 
@@ -278,6 +285,14 @@ Run ESLint:
 docker compose exec frontend npm run lint
 ```
 
+Run the frontend regression tests using Node's built-in test runner:
+
+```bash
+docker compose exec frontend npm test
+```
+
+These tests cover Unicode character boundaries and nonblank client validation.
+
 ### Local Frontend Development
 
 Node.js 24 and npm are required.
@@ -295,13 +310,12 @@ Open http://localhost:5173/ in your browser.
 To run local verification:
 
 ```bash
+npm test
 npm run build
 npm run lint
 ```
 
-The frontend currently displays the default Vite + React starter interface.
-
-Pathfinder-specific learner interfaces and Rails API integration will be implemented in subsequent tickets.
+The integrated goal-saving flow requires Docker development: the existing Vite proxy uses the Docker service hostname `app`, which is not available to a host-local Vite process. Local Node commands remain useful for frontend tests, linting, and builds.
 
 See `frontend/README.md` for additional setup and development instructions.
 
@@ -327,6 +341,34 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend app \
   bin/rails runner 'puts "Pathfinder Rails API booted: #{Rails.version}"'
 ```
 
+## Goal Creation API
+
+Send JSON to `POST /api/goals`, either through Vite at `http://localhost:5173/api/goals` or directly to Rails at `http://localhost:3000/api/goals`, with `Content-Type: application/json`:
+
+```json
+{"goal":{"description":"Become a backend developer"}}
+```
+
+Success returns HTTP **201 Created** and the persisted record (the ID is server-generated):
+
+```json
+{"goal":{"id":1,"description":"Become a backend developer"}}
+```
+
+Description must be a nonblank string of at most 500 Unicode code points. Combining marks and emoji sequence components count separately. Invalid descriptions return HTTP **422** without creating a record:
+
+```json
+{"errors":{"description":["can't be blank"]}}
+```
+
+Non-string descriptions return `"must be a string"`; descriptions over the limit return `"is too long (maximum is 500 characters)"` in the same error structure. A missing top-level goal object returns HTTP **400**:
+
+```json
+{"errors":{"goal":["is required"]}}
+```
+
+Only `description` is permitted; client-supplied IDs and timestamps are ignored.
+
 ## Security and Configuration
 
 Secrets and private credentials must not be committed to the repository.
@@ -343,9 +385,15 @@ The encrypted Rails credentials file may be version controlled while the corresp
 
 Local Docker database credentials are development-only. Production database credentials must be supplied through environment configuration.
 
+Goal descriptions are filtered from Rails request parameters and Active Record SQL bind logs. Development query tags are disabled to preserve prepared statements and bind filtering while retaining application and SQL logging.
+
+## Current Limitations
+
+There is no authentication, goal retrieval, goal listing/editing/deletion, AI analysis, or learning-path generation. The saved goal display lasts for the current page session; reloading does not retrieve previously saved goals. This is a local development proof of concept.
+
 ## Current Status
 
-**React + TypeScript Frontend Foundation established**
+**PF-008 — Learner Goal Definition implemented; final approval, commit, and merge pending.**
 
 Completed tickets:
 
@@ -357,12 +405,8 @@ Completed tickets:
 
 Current ticket:
 
-- **PF-006 — React + TypeScript Frontend Foundation** (verification passed; pending review and merge)
+- **PF-008 — Learner Goal Definition**
 
-Next ticket:
-
-> **PF-007 — AGENTS.md**
-
-The repository now contains the Rails API, PostgreSQL configuration, RSpec test foundation, and React + TypeScript frontend.
+The repository contains the integrated React goal form, Rails API, PostgreSQL persistence, and backend/frontend regression tests. Repository engineering instructions are in `AGENTS.md`.
 
 Both backend and frontend development environments are supported through Docker Compose.
