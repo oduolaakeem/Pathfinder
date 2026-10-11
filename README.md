@@ -443,7 +443,7 @@ Goal/skills retrieval and editing, goal listing/deletion, assessment history, pr
 
 ## Current Status
 
-**PF-010 — AI-Assisted Skill Gap Identification implemented on the feature branch; awaiting final verification and merge.**
+**PF-008, PF-009, and PF-010 are implemented and merged into develop.**
 
 Completed tickets:
 
@@ -454,10 +454,9 @@ Completed tickets:
 - **PF-005 — RSpec / Test Foundation**
 - **PF-008 — Learner Goal Definition (merged into develop)**
 - **PF-009 — Learner Current Skills (merged into develop)**
+- **PF-010 — AI-Assisted Skill Gap Identification (merged into develop)**
 
-Current ticket:
-
-- **PF-010 — AI-Assisted Skill Gap Identification**
+Current work focuses on submission and demo readiness; no further implementation ticket is identified here.
 
 Latest completed verification: 115 backend examples and 35 frontend tests, all passing; frontend lint and production build passed. Synthetic live Rails-to-Gemini integration and browser acceptance passed. Coverage includes request contracts, provider parsing and failures, privacy logging, and frontend API validation. The post-review provider-spec rerun remains outstanding because of Windows memory pressure; it is not recorded as passing. Automated component/lifecycle coverage and concurrent duplicate skills requests remain gaps; manual interactions, sequential duplicates, and database uniqueness are covered.
 
