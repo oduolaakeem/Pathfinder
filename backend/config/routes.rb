@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   namespace :api do
     resources :goals, only: :create do
       resources :current_skills, only: :create
+      post "skill_gap", to: "skill_gaps#create"
     end
   end
 

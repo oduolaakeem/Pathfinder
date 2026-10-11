@@ -6,7 +6,7 @@ Many learners know what they want to become but struggle to understand what skil
 
 Pathfinder helps bridge that gap.
 
-The planned journey lets a learner define a career goal and share their current skills, then receive skill-gap analysis, a personalized learning path, and AI-assisted feedback on practical work. These AI capabilities are not implemented yet.
+The implemented journey is: define a career goal → describe current technical skills → review the AI disclosure and give consent → generate an AI-assisted skill-gap assessment → review preliminary results. Personalized learning paths and feedback on practical work remain planned.
 
 PF-008 and PF-009 implement this journey: define and save a software-development career goal → describe current technical skills → save → view confirmation. React displays the persisted descriptions returned by Rails, with accessible validation feedback, saving states, and Unicode code-point counters. Goals allow 500 code points; current skills allow 2,000.
 
@@ -63,7 +63,7 @@ Vite proxies `/api` requests to `http://app:3000` on Docker's internal network. 
 
 ### AI
 
-- OpenAI API
+- Google Gemini API for real skill-gap inference (PF-010)
 - Codex-assisted development workflow
 
 ### Development Environment
@@ -396,6 +396,25 @@ Each goal permits one current-skills submission. Description must be a nonblank 
 
 Failures do not create an additional record. The database unique index also prevents duplicate submissions from racing inserts.
 
+## AI Skill-Gap Assessment
+
+After saving current skills, the learner reviews the disclosure and checks an initially unchecked consent checkbox before explicitly requesting analysis. Rails sends the saved descriptions to Google's Gemini API for real inference; React sends only `{}` to `POST /api/goals/:goal_id/skill_gap`.
+
+The only supported goal is **Become a backend developer**, ignoring case and surrounding whitespace. Profile `backend_development`, version `"1"`, classifies five categories: **Programming language**, **SQL**, **Git**, **HTTP/API concepts**, and **Automated testing**. Each appears exactly once as `identified`, `not_identified`, or `uncertain`.
+
+Results are preliminary interpretations of self-reported descriptions. Identified mentions are not verified competencies; not-identified categories are not proof of missing ability. This is not a job-readiness assessment. Results are transient and provide no recommendations or learning paths.
+
+HTTP 200 returns validated groups; 404 means goal not found; 422 means unsupported goal or missing skills; 502 means unusable AI output; 503 means provider unavailable. See the [backend contract and secure Gemini setup](backend/README.md#ai-skill-gap-assessment) for exact JSON and configuration.
+
+For AI-enabled local development, privately configure the Git-ignored `.env.gemini` with `GEMINI_API_KEY` and `GEMINI_MODEL=gemini-3.5-flash-lite`. Never commit or disclose the key. From the repository root:
+
+```bash
+docker compose --env-file .env.gemini config --quiet
+docker compose --env-file .env.gemini up -d app frontend
+```
+
+Compose forwards these variables only to Rails. Open the React interface at http://localhost:5173/. Do not print resolved Compose configuration containing credentials. Ordinary development without this file still supports goal and skills creation; assessment requires provider configuration.
+
 ## Security and Configuration
 
 Secrets and private credentials must not be committed to the repository.
@@ -418,11 +437,13 @@ Goal and current-skills descriptions are filtered from Rails request parameters 
 
 This is a localhost-only proof of concept with no authentication or authorization. A goal ID does not prove ownership; the endpoint must not be exposed as a production multi-user service without access controls.
 
-Goal/skills retrieval and editing, goal listing/deletion, AI analysis or feedback, and learning-path generation remain deferred. Saved goal context and confirmations exist only in the current UI session. Refreshing does not restore the skills form or saved skills, although persisted records remain in PostgreSQL.
+There is no rate limiting. Consent is enforced in the browser UI, not through server-side authorization. Learner descriptions are transmitted to Google's Gemini service; do not submit sensitive or confidential information. AI classifications may be inaccurate, and free-tier availability and quotas can change. Only the supported backend-development goal is assessed.
+
+Goal/skills retrieval and editing, goal listing/deletion, assessment history, proficiency scoring, learning-path generation, and production deployment remain deferred. Saved goal context, consent, and assessment results exist only in the current UI session; refresh does not restore them. Goal and skills records remain in PostgreSQL, but assessments are not persisted.
 
 ## Current Status
 
-**PF-009 — Learner Current Skills implemented; awaiting merge.**
+**PF-010 — AI-Assisted Skill Gap Identification implemented on the feature branch; awaiting final verification and merge.**
 
 Completed tickets:
 
@@ -432,12 +453,13 @@ Completed tickets:
 - **PF-004 — PostgreSQL Configuration**
 - **PF-005 — RSpec / Test Foundation**
 - **PF-008 — Learner Goal Definition (merged into develop)**
+- **PF-009 — Learner Current Skills (merged into develop)**
 
 Current ticket:
 
-- **PF-009 — Learner Current Skills**
+- **PF-010 — AI-Assisted Skill Gap Identification**
 
-The repository contains the integrated React goal-to-skills flow, Rails API, PostgreSQL persistence, and backend/frontend regression tests. Latest reported PF-009 verification: 44 backend examples and 17 frontend tests passing, frontend lint and production build passing, and 6/6 manual browser acceptance checks passing. Coverage includes request validation, database constraints, privacy logging, and the journey through the Vite proxy. Concurrent duplicate requests have not been exercised; sequential duplicates and database uniqueness are covered.
+Latest completed verification: 115 backend examples and 35 frontend tests, all passing; frontend lint and production build passed. Synthetic live Rails-to-Gemini integration and browser acceptance passed. Coverage includes request contracts, provider parsing and failures, privacy logging, and frontend API validation. The post-review provider-spec rerun remains outstanding because of Windows memory pressure; it is not recorded as passing. Automated component/lifecycle coverage and concurrent duplicate skills requests remain gaps; manual interactions, sequential duplicates, and database uniqueness are covered.
 
 Repository engineering instructions are in `AGENTS.md`.
 

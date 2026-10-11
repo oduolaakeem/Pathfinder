@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createCurrentSkills } from './api/currentSkills'
 import type { CurrentSkills } from './api/currentSkills'
+import SkillGapAssessment from './SkillGapAssessment'
 import {
   countSkillCharacters,
   CURRENT_SKILLS_DESCRIPTION_LIMIT,
@@ -52,6 +53,7 @@ export default function CurrentSkillsForm({ goalId }: { goalId: number }) {
   }
 
   return (
+    <>
     <section className="goal-card skills-card" aria-labelledby="skills-heading">
       <p className="eyebrow">Your next step</p>
       <h2 id="skills-heading">Your current technical skills</h2>
@@ -92,5 +94,7 @@ export default function CurrentSkillsForm({ goalId }: { goalId: number }) {
         )}
       </div>
     </section>
+    {savedSkills && <SkillGapAssessment key={savedSkills.goal_id} goalId={savedSkills.goal_id} />}
+    </>
   )
 }

@@ -26,6 +26,15 @@ textarea:disabled { background: #f2f3ed; }
 .saved-description { margin: 16px 0 12px; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
 .skills-card { margin-top: 24px; }
 .skills-confirmation { margin-top: 24px; }
+.assessment-card { margin-top: 24px; }
+.assessment-consent { display: flex; align-items: flex-start; gap: 12px; line-height: 1.6; }
+.assessment-consent input { flex-shrink: 0; width: 20px; height: 20px; margin-top: 3px; accent-color: #234735; }
+.assessment-consent input:focus-visible { outline: 3px solid #578346; outline-offset: 3px; }
+.assessment-card button:disabled { cursor: not-allowed; }
+.assessment-results { margin-top: 24px; }
+.assessment-group { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dce0d4; }
+.assessment-group h3 { font-size: 17px; line-height: 1.5; }
+.assessment-group ul { padding-left: 24px; line-height: 1.8; }
 @media (max-width: 480px) {
   .page { padding: 24px 16px 40px; }
   .brand { margin-bottom: 40px; }
