@@ -98,7 +98,7 @@ Run the regression tests locally with Node.js 24's built-in test runner:
 npm test
 ```
 
-The 17 Node regression tests cover goal 500/501 and skills 2,000/2,001 Unicode-code-point boundaries, supplementary characters, mixed ASCII/Unicode text, and nonblank validation. Current-skills API tests verify the request URL/body, persisted response parsing, HTTP 400/422/404/409 handling, network failures, and malformed responses.
+The latest completed suite has **35 Node tests passing**. Tests cover goal 500/501 and skills 2,000/2,001 Unicode-code-point boundaries, supplementary characters, mixed ASCII/Unicode text, and nonblank validation. Current-skills API tests verify the request URL/body, persisted response parsing, HTTP 400/422/404/409 handling, network failures, and malformed responses. `tests/skill-gap.test.mjs` covers the typed assessment client, exact empty-body request, strict result validation, HTTP 404/422/502/503 errors, network failures, and malformed/non-JSON responses using injected fetch without live Gemini calls.
 
 Run the production build locally:
 
@@ -140,8 +140,30 @@ On success, the form displays the persisted description returned by Rails and re
 
 Manual browser acceptance passed 6/6 checks for the integrated journey. Automated frontend coverage currently focuses on validation and API handling; form interaction coverage is manual.
 
+## AI Skill-Gap Assessment
+
+PF-010 adds `SkillGapAssessment.tsx` after successful current-skills submission. To enable the backend's Gemini configuration, follow the [secure setup instructions](../backend/README.md#secure-local-gemini-configuration) and start services with `docker compose --env-file .env.gemini up -d app frontend` from the repository root. Credentials belong only to Rails, never to frontend code.
+
+The interface discloses that saved goal and skills descriptions are sent to Google's Gemini service, warns against sensitive or confidential information, and explains that results are preliminary rather than verification of proficiency or job readiness. An initially unchecked, labelled consent checkbox is required before explicit submission; analysis never starts automatically.
+
+`api/skillGap.ts` sends `{}` to `POST /api/goals/:goal_id/skill_gap` using the saved goal ID, without descriptions or credentials. It strictly validates identifiers, profile metadata, and all five approved catalogue labels appearing exactly once across three groups. Raw provider output is never displayed or stored in localStorage.
+
+While loading, the interface prevents repeated submissions and announces that analysis may take approximately 20–30 seconds. Safe errors cover 404/422/502/503, network failures, and malformed responses. Recoverable failures offer an explicit retry; 404/422 require resolving the saved data or supported goal rather than another assessment attempt.
+
+Results display backend-development profile version 1 and these groups, with explanatory text for empty groups:
+
+- Skills identified in your description
+- Skills not identified in your description
+- Skills requiring clarification
+
+Identified mentions do not prove competence, and not-identified categories do not prove missing ability. Accessible status/error announcements accompany loading, success, and failure. A new saved goal resets consent, errors, and results; late responses from an unmounted assessment are ignored. Successful assessments do not trigger further requests automatically.
+
+Synthetic live browser acceptance passed, including loading feedback, repeated-click protection, all five categories, and limitation disclosure. Automated frontend coverage focuses on pure validation and API handling; component lifecycle, keyboard interaction, and layout still rely on manual checks. Latest completed lint and production build passed; this documentation step does not rerun them.
+
 ## Limitations
 
 Saved goal context is held only in the current UI session. Refreshing does not restore the skills form or saved skills; persisted records remain in PostgreSQL, but retrieval and editing are deferred.
 
-This is a localhost-only proof of concept with no authentication or authorization. A goal ID does not prove ownership; the endpoint must not be exposed as a production multi-user service without access controls. AI analysis or feedback and learning-path generation are not implemented.
+Consent and assessment results are also session-only: assessments are not persisted or restored after refresh.
+
+This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not establish ownership; browser consent is not server-side authorization. Do not expose the endpoint as a production multi-user service. Only “Become a backend developer” is supported, ignoring case and surrounding whitespace. AI classifications may be inaccurate; Gemini free-tier availability and quotas may change. Learner text is transmitted to Google, so avoid sensitive or confidential information. Assessment history, retrieval/editing, learning-path generation, proficiency scoring, and production deployment are outside the current scope.

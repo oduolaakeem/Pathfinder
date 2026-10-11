@@ -140,6 +140,60 @@ Strong parameters permit only `description`. `goal_id` comes from the URL; clien
 
 Error responses do not persist an additional record or expose internal exception details. Only violations of the goal uniqueness index are translated into the duplicate-submission response.
 
+## AI Skill-Gap Assessment
+
+`POST /api/goals/:goal_id/skill_gap` accepts JSON `{}`. Rails loads the persisted `Goal` and its `CurrentSkill`; client-supplied replacement descriptions are not used. Only **Become a backend developer** is supported, ignoring case and surrounding whitespace. Assessment requests do not create or modify records, and results are not persisted.
+
+HTTP **200** returns the following shape (IDs are those of the saved records; classifications vary):
+
+```json
+{"skill_gap":{"goal_id":1,"current_skill_id":1,"profile":"backend_development","profile_version":"1","method":"ai_assisted","identified_skills":["Programming language","SQL","Git"],"not_identified_skills":["Automated testing"],"uncertain_skills":["HTTP/API concepts"]}}
+```
+
+| Status | Condition | JSON response |
+| --- | --- | --- |
+| 404 | Unknown goal | `{"errors":{"goal":["not found"]}}` |
+| 422 | Unsupported goal | `{"errors":{"goal":["is not supported for skill gap identification"]}}` |
+| 422 | No saved skills | `{"errors":{"current_skills":["must be saved before identifying skill gaps"]}}` |
+| 502 | Unusable AI response | `{"errors":{"skill_gap":["invalid provider result"]}}` |
+| 503 | Provider unavailable | `{"errors":{"skill_gap":["provider unavailable"]}}` |
+
+`GeminiSkillGapProvider.classify` uses standard-library Net::HTTP and JSON, verified HTTPS, a server-controlled endpoint, and the `x-goog-api-key` header. It requests structured JSON for exactly five categories, each classified as `identified`, `not_identified`, or `uncertain`. Validation rejects duplicate/missing/unexpected keys, unsupported values, blocked or incomplete output, and oversized responses. Final-text metadata is ignored. Connection/read/write timeouts are 3/30/5 seconds; payloads are bounded to 64 KiB and output to 1,024 tokens. No automatic retries occur. Typed failures map to generic errors without raw provider details.
+
+### Secure local Gemini configuration
+
+Privately create `.env.gemini` at the repository root with `GEMINI_API_KEY` and `GEMINI_MODEL=gemini-3.5-flash-lite`. The key must remain local: do not commit, print, or disclose it. Git ignores this file and Docker build exclusions cover `.env` and `.env.*`. Compose forwards Gemini variables only to the Rails service; they are never frontend configuration.
+
+After ordinary database setup, run from the repository root:
+
+```bash
+docker compose --env-file .env.gemini config --quiet
+docker compose --env-file .env.gemini up -d app frontend
+```
+
+Use `--quiet` when validating configuration to avoid printing resolved credentials. Compose and the provider default to `gemini-3.5-flash-lite`; `GEMINI_MODEL` can override it. Model access and free-tier quotas are project-dependent and may change.
+
+### Explicit live checks
+
+These are manual synthetic checks, separate from offline RSpec. Each command below initiates a real Gemini request and consumes quota. Run only with explicit authorization; neither script retries. Both require the exact `--live` argument and configured credentials. In PowerShell, omit `MSYS_NO_PATHCONV=1`.
+
+Standalone connectivity and structured-output check:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose --env-file .env.gemini run --rm --no-deps \
+  -w /app/backend app bundle exec ruby script/gemini_smoke_test.rb --live
+```
+
+Actual Rails endpoint check, using only synthetic records in the test database:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose --env-file .env.gemini run --rm \
+  -w /app/backend -e RAILS_ENV=test app \
+  bundle exec ruby script/skill_gap_live_test.rb --live
+```
+
+The endpoint harness requires the test environment/database, rolls back synthetic records on success or failure, and verifies rollback. Scripts print only safe outcome, status, model, elapsed time, and predefined failure categories. They verify integration and response structure, not model accuracy.
+
 ## Logging Privacy
 
 Rails filters `description` from request parameter logs, including nested goal and current-skills descriptions. Active Record SQL bind logging also redacts descriptions. Development query tags are disabled to retain prepared statements and bind filtering while keeping useful application and SQL logs enabled. Successful API responses still return the saved description.
@@ -168,13 +222,15 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
 
 The suite verifies the Rails test environment and PostgreSQL connection, goal and current-skills persistence, API validation/error contracts, Unicode boundaries, protected attributes, required goal association, foreign key, non-null and unique constraints, and request/SQL logging privacy. Privacy regressions also exercise the real development logging configuration against the test database and roll back synthetic records.
 
-The latest reported full suite has 44 examples passing. PF-009 request and constraint tests are in `spec/requests/current_skills_spec.rb`; privacy regressions are in `spec/requests/current_skills_logging_spec.rb`. Sequential duplicate submissions and database uniqueness are covered; concurrent duplicate requests have not been exercised.
+The latest completed full suite has **115 examples, 0 failures**. PF-009 request and constraint tests are in `spec/requests/current_skills_spec.rb`; privacy regressions are in `spec/requests/current_skills_logging_spec.rb`. Sequential duplicate submissions and database uniqueness are covered; concurrent duplicate requests have not been exercised.
+
+PF-010 has 24 request examples in `spec/requests/skill_gaps_spec.rb`, 42 mocked-provider examples in `spec/services/gemini_skill_gap_provider_spec.rb`, and five privacy examples in `spec/requests/skill_gaps_logging_spec.rb`. They cover generic 502/503 errors, sensitive-value exclusion from logs/responses, real development logging configuration, and safe successful responses containing only catalogue labels and metadata. Automated tests use fake credentials and guarded/mocked transport, not live Gemini. The post-review provider-spec rerun is pending due to Windows memory pressure; the last completed suite predates the smoke-script safeguards and spec-comment corrections.
 
 RSpec was configured in **PF-005 — RSpec / Test Foundation**.
 
 ## Limitations
 
-This is a localhost-only proof of concept with no authentication or authorization. A goal ID does not prove ownership; do not expose the endpoint as a production multi-user service without access controls. Goal/skills retrieval and editing, AI analysis or feedback, and learning-path generation remain deferred.
+This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not prove ownership. Consent is enforced in the browser UI, not by server-side authorization. Do not expose this as a production multi-user service. Learner text goes to Google's Gemini service; do not submit sensitive or confidential information. Classifications may be inaccurate and do not verify competence or job readiness. Only the supported backend-development goal is assessed. Retrieval, editing, assessment history, proficiency scoring, learning paths, and production deployment remain deferred.
 
 ## Windows Git Bash
 
