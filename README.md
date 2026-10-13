@@ -6,7 +6,7 @@ Many learners know what they want to become but struggle to understand what skil
 
 Pathfinder helps bridge that gap.
 
-The implemented journey is: define a career goal → describe current technical skills → review the AI disclosure and give consent → generate an AI-assisted skill-gap assessment → review preliminary results. Personalized learning paths and feedback on practical work remain planned.
+The implemented journey is: career goal → current skills → review the Gemini disclosure and give explicit consent → Gemini-assisted assessment → curated learning path → recommended next action. Learner-project evaluation and advanced adaptive paths remain planned.
 
 PF-008 and PF-009 implement this journey: define and save a software-development career goal → describe current technical skills → save → view confirmation. React displays the persisted descriptions returned by Rails, with accessible validation feedback, saving states, and Unicode code-point counters. Goals allow 500 code points; current skills allow 2,000.
 
@@ -402,7 +402,11 @@ After saving current skills, the learner reviews the disclosure and checks an in
 
 The only supported goal is **Become a backend developer**, ignoring case and surrounding whitespace. Profile `backend_development`, version `"1"`, classifies five categories: **Programming language**, **SQL**, **Git**, **HTTP/API concepts**, and **Automated testing**. Each appears exactly once as `identified`, `not_identified`, or `uncertain`.
 
-Results are preliminary interpretations of self-reported descriptions. Identified mentions are not verified competencies; not-identified categories are not proof of missing ability. This is not a job-readiness assessment. Results are transient and provide no recommendations or learning paths.
+Results are preliminary interpretations of self-reported descriptions. Identified mentions are not verified competencies; not-identified categories are not proof of missing ability. This is not a job-readiness assessment. Gemini classifies the five categories; it does not generate learning activities. Each assessment uses one Gemini request, with no additional request for path derivation.
+
+PF-015 derives a transient learning path from validated classifications using a deterministic, language-flexible curated catalogue, version `"1"`. Activities follow Programming language → Git → SQL → HTTP/API concepts → Automated testing, skipping identified categories and numbering selected steps contiguously. Not-identified categories receive practice activities; uncertain categories invite clarification and practical evidence. If all five categories are identified, one integrated backend practice exercise is returned without claiming mastery.
+
+HTTP 200 contains both `skill_gap` and `learning_path`. The path has `method: "curated"`, `catalogue_version: "1"`, ordered `steps`, and `next_action` equal to the complete first step. Each step includes category, order, title, instruction, and suggested completion evidence. React displays the path and suggested starting activity. Evidence is not uploaded, submitted, or evaluated. See the [full response contract](backend/README.md#ai-skill-gap-assessment).
 
 HTTP 200 returns validated groups; 404 means goal not found; 422 means unsupported goal or missing skills; 502 means unusable AI output; 503 means provider unavailable. See the [backend contract and secure Gemini setup](backend/README.md#ai-skill-gap-assessment) for exact JSON and configuration.
 
@@ -439,7 +443,7 @@ This is a localhost-only proof of concept with no authentication or authorizatio
 
 There is no rate limiting. Consent is enforced in the browser UI, not through server-side authorization. Learner descriptions are transmitted to Google's Gemini service; do not submit sensitive or confidential information. AI classifications may be inaccurate, and free-tier availability and quotas can change. Only the supported backend-development goal is assessed.
 
-Goal/skills retrieval and editing, goal listing/deletion, assessment history, proficiency scoring, learning-path generation, and production deployment remain deferred. Saved goal context, consent, and assessment results exist only in the current UI session; refresh does not restore them. Goal and skills records remain in PostgreSQL, but assessments are not persisted.
+Goal/skills retrieval and editing, goal listing/deletion, assessment history, proficiency scoring, learner-project evaluation, advanced/adaptive learning paths, and production deployment remain deferred. Saved goal context, consent, assessments, and paths exist only in the current UI session; refresh does not restore them. Goal and skills records remain in PostgreSQL; assessments and paths are not persisted.
 
 ## Current Status
 
@@ -456,9 +460,11 @@ Completed tickets:
 - **PF-009 — Learner Current Skills (merged into develop)**
 - **PF-010 — AI-Assisted Skill Gap Identification (merged into develop)**
 
-Current work focuses on submission and demo readiness; no further implementation ticket is identified here.
+**PF-015 — Curated Learning Path and Recommended Next Action is implemented on `feature/PF-015-learning-path`, awaiting final verification and merge.**
 
-Latest completed verification: 115 backend examples and 35 frontend tests, all passing; frontend lint and production build passed. Synthetic live Rails-to-Gemini integration and browser acceptance passed. Coverage includes request contracts, provider parsing and failures, privacy logging, and frontend API validation. The post-review provider-spec rerun remains outstanding because of Windows memory pressure; it is not recorded as passing. Automated component/lifecycle coverage and concurrent duplicate skills requests remain gaps; manual interactions, sequential duplicates, and database uniqueness are covered.
+Latest completed verification: **140 backend RSpec examples and 42 frontend tests, all passing**; frontend lint and production build passed. The full backend run includes the previously pending PF-010 provider verification. Synthetic live Gemini integration previously passed. PF-015 manual browser Scenario A passed **10/10** checks and Scenario B passed **7/7**, including all five categories identified and the integrated-practice fallback. Failed-request retry/reset was not manually exercised. Coverage includes builder ordering and fallback, request contracts, provider parsing/failures, privacy logging, and strict frontend response validation. Component/lifecycle automation and concurrent duplicate skills requests remain gaps. Pre-existing repository Ruby style offenses remain outside PF-015 scope; the builder spec's focused RuboCop check passed.
+
+Remaining roadmap: **PF-018 — bounded evaluation foundation** and **PF-019 — sprint review/demo and submission**. Advanced adaptive paths and evaluation of learner projects remain deferred.
 
 Repository engineering instructions are in `AGENTS.md`.
 

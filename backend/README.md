@@ -147,7 +147,29 @@ Error responses do not persist an additional record or expose internal exception
 HTTP **200** returns the following shape (IDs are those of the saved records; classifications vary):
 
 ```json
-{"skill_gap":{"goal_id":1,"current_skill_id":1,"profile":"backend_development","profile_version":"1","method":"ai_assisted","identified_skills":["Programming language","SQL","Git"],"not_identified_skills":["Automated testing"],"uncertain_skills":["HTTP/API concepts"]}}
+{
+  "skill_gap": {
+    "goal_id": 1, "current_skill_id": 1,
+    "profile": "backend_development", "profile_version": "1", "method": "ai_assisted",
+    "identified_skills": ["Programming language", "SQL", "Git", "HTTP/API concepts"],
+    "not_identified_skills": ["Automated testing"], "uncertain_skills": []
+  },
+  "learning_path": {
+    "method": "curated", "catalogue_version": "1",
+    "steps": [{
+      "category": "Automated testing", "order": 1,
+      "title": "Test input-validation behavior",
+      "instruction": "Using an appropriate testing framework for your chosen language, test valid, blank, maximum-length, and over-limit inputs in a practice program.",
+      "completion_evidence": "Automated test files and passing results covering all four input-validation cases."
+    }],
+    "next_action": {
+      "category": "Automated testing", "order": 1,
+      "title": "Test input-validation behavior",
+      "instruction": "Using an appropriate testing framework for your chosen language, test valid, blank, maximum-length, and over-limit inputs in a practice program.",
+      "completion_evidence": "Automated test files and passing results covering all four input-validation cases."
+    }
+  }
+}
 ```
 
 | Status | Condition | JSON response |
@@ -159,6 +181,14 @@ HTTP **200** returns the following shape (IDs are those of the saved records; cl
 | 503 | Provider unavailable | `{"errors":{"skill_gap":["provider unavailable"]}}` |
 
 `GeminiSkillGapProvider.classify` uses standard-library Net::HTTP and JSON, verified HTTPS, a server-controlled endpoint, and the `x-goog-api-key` header. It requests structured JSON for exactly five categories, each classified as `identified`, `not_identified`, or `uncertain`. Validation rejects duplicate/missing/unexpected keys, unsupported values, blocked or incomplete output, and oversized responses. Final-text metadata is ignored. Connection/read/write timeouts are 3/30/5 seconds; payloads are bounded to 64 KiB and output to 1,024 tokens. No automatic retries occur. Typed failures map to generic errors without raw provider details.
+
+### Curated learning path
+
+The vertical slice is career goal → current skills → Gemini-assisted assessment → curated learning path → recommended next action. Gemini only classifies the five categories; it does not write activities. One provider request is made per assessment. After validation, the pure `LearningPathBuilder.call(classifications:)` derives a path without network or database access.
+
+Catalogue version `"1"` uses language-flexible activities in fixed priority: Programming language → Git → SQL → HTTP/API concepts → Automated testing. Identified categories are omitted from immediate gap activities, without implying mastery. Not-identified categories receive practice; uncertain categories request clarification and practical evidence. Selected steps have contiguous orders starting at 1. All-identified assessments receive exactly one `Integrated practice` backend exercise.
+
+The success envelope has exactly `skill_gap` and `learning_path`. The path contains exactly `method`, `catalogue_version`, `steps`, and `next_action`; each step contains exactly `category`, `order`, `title`, `instruction`, and `completion_evidence`. `next_action` equals the complete first step. Error contracts above are unchanged and contain no path. Evidence is suggested, not submitted or evaluated. Neither assessment nor path is persisted; no migration was added. These preliminary recommendations do not verify competence or job readiness.
 
 ### Secure local Gemini configuration
 
@@ -192,7 +222,7 @@ MSYS_NO_PATHCONV=1 docker compose --env-file .env.gemini run --rm \
   bundle exec ruby script/skill_gap_live_test.rb --live
 ```
 
-The endpoint harness requires the test environment/database, rolls back synthetic records on success or failure, and verifies rollback. Scripts print only safe outcome, status, model, elapsed time, and predefined failure categories. They verify integration and response structure, not model accuracy.
+The endpoint harness requires the test environment/database, validates both assessment and path (including coverage, ordering, fallback, and next-action equality), rolls back synthetic records on success or failure, and verifies rollback. Scripts print only safe outcome, status, model, elapsed time, and predefined failure categories. They verify integration and response structure, not model accuracy. The standalone smoke script checks Gemini classification only; it does not derive a path.
 
 ## Logging Privacy
 
@@ -222,15 +252,15 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend \
 
 The suite verifies the Rails test environment and PostgreSQL connection, goal and current-skills persistence, API validation/error contracts, Unicode boundaries, protected attributes, required goal association, foreign key, non-null and unique constraints, and request/SQL logging privacy. Privacy regressions also exercise the real development logging configuration against the test database and roll back synthetic records.
 
-The latest completed full suite has **115 examples, 0 failures**. PF-009 request and constraint tests are in `spec/requests/current_skills_spec.rb`; privacy regressions are in `spec/requests/current_skills_logging_spec.rb`. Sequential duplicate submissions and database uniqueness are covered; concurrent duplicate requests have not been exercised.
+The latest completed full suite has **140 examples, 0 failures**. PF-009 request and constraint tests are in `spec/requests/current_skills_spec.rb`; privacy regressions are in `spec/requests/current_skills_logging_spec.rb`. Sequential duplicate submissions and database uniqueness are covered; concurrent duplicate requests have not been exercised.
 
-PF-010 has 24 request examples in `spec/requests/skill_gaps_spec.rb`, 42 mocked-provider examples in `spec/services/gemini_skill_gap_provider_spec.rb`, and five privacy examples in `spec/requests/skill_gaps_logging_spec.rb`. They cover generic 502/503 errors, sensitive-value exclusion from logs/responses, real development logging configuration, and safe successful responses containing only catalogue labels and metadata. Automated tests use fake credentials and guarded/mocked transport, not live Gemini. The post-review provider-spec rerun is pending due to Windows memory pressure; the last completed suite predates the smoke-script safeguards and spec-comment corrections.
+PF-015 has 23 builder examples, 26 assessment/path request examples, and five privacy examples; the provider retains 42 mocked examples. Coverage includes deterministic paths, clarification, fallback, exact response contracts, generic errors without paths, and sensitive-value exclusion from logs/responses using real development logging configuration. Automated tests use fake credentials and guarded/mocked transport, not live Gemini. The full suite now includes the previously pending PF-010 provider verification. Frontend verification passed 42 tests, lint, and build. Manual browser Scenario A passed 10/10 checks and Scenario B passed 7/7, including the all-identified fallback. Failed-request retry/reset was not manually exercised. The builder spec's focused RuboCop check passed; pre-existing style offenses elsewhere remain outside scope.
 
 RSpec was configured in **PF-005 — RSpec / Test Foundation**.
 
 ## Limitations
 
-This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not prove ownership. Consent is enforced in the browser UI, not by server-side authorization. Do not expose this as a production multi-user service. Learner text goes to Google's Gemini service; do not submit sensitive or confidential information. Classifications may be inaccurate and do not verify competence or job readiness. Only the supported backend-development goal is assessed. Retrieval, editing, assessment history, proficiency scoring, learning paths, and production deployment remain deferred.
+This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not prove ownership. Consent is enforced in the browser UI, not by server-side authorization. Do not expose this as a production multi-user service. Learner text goes to Google's Gemini service; do not submit sensitive or confidential information. Classifications may be inaccurate and do not verify competence or job readiness. Only the supported backend-development goal is assessed. Retrieval, editing, assessment/path history, proficiency scoring, learner-project evaluation, advanced/adaptive paths, and production deployment remain deferred. Remaining roadmap: PF-018 bounded evaluation foundation and PF-019 sprint review/demo and submission.
 
 ## Windows Git Bash
 

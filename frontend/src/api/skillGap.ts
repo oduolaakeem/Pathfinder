@@ -1,5 +1,26 @@
 const CATEGORIES = ['Programming language', 'SQL', 'Git', 'HTTP/API concepts', 'Automated testing'] as const
 type SkillCategory = typeof CATEGORIES[number]
+const PATH_PRIORITY: SkillCategory[] = ['Programming language', 'Git', 'SQL', 'HTTP/API concepts', 'Automated testing']
+
+export interface LearningStep {
+  category: SkillCategory | 'Integrated practice'
+  order: number
+  title: string
+  instruction: string
+  completion_evidence: string
+}
+
+export interface LearningPath {
+  method: 'curated'
+  catalogue_version: '1'
+  steps: LearningStep[]
+  next_action: LearningStep
+}
+
+export interface SkillGapAssessment {
+  skillGap: SkillGap
+  learningPath: LearningPath
+}
 
 export interface SkillGap {
   goal_id: number
@@ -13,7 +34,7 @@ export interface SkillGap {
 }
 
 type SkillGapResult =
-  | { kind: 'assessed'; skillGap: SkillGap }
+  | ({ kind: 'assessed' } & SkillGapAssessment)
   | { kind: 'error'; message: string; status?: 404 | 422 | 502 | 503 }
 
 type Fetcher = (url: string, options: RequestInit) => Promise<Response>
@@ -42,6 +63,35 @@ function isSkillGap(value: unknown, goalId: number): value is SkillGap {
   const labels: unknown[] = groups.flat()
   return labels.length === CATEGORIES.length && new Set(labels).size === CATEGORIES.length
     && CATEGORIES.every((category) => labels.includes(category))
+}
+
+const STEP_KEYS = ['category', 'order', 'title', 'instruction', 'completion_evidence']
+
+function isLearningStep(value: unknown): value is LearningStep {
+  return isObject(value) && hasExactKeys(value, STEP_KEYS)
+    && (value.category === 'Integrated practice' || CATEGORIES.some((category) => category === value.category))
+    && isPositiveId(value.order)
+    && ['title', 'instruction', 'completion_evidence'].every((field) => {
+      const text = value[field]
+      return typeof text === 'string' && text.trim().length > 0 && Array.from(text).length <= 2000
+    })
+}
+
+function isLearningPath(value: unknown, assessment: SkillGap): value is LearningPath {
+  if (!isObject(value) || !hasExactKeys(value, ['method', 'catalogue_version', 'steps', 'next_action'])
+    || value.method !== 'curated' || value.catalogue_version !== '1'
+    || !Array.isArray(value.steps) || value.steps.length < 1 || value.steps.length > 5
+    || !value.steps.every(isLearningStep) || !isLearningStep(value.next_action)) return false
+
+  const selected = PATH_PRIORITY.filter((category) => assessment.not_identified_skills.includes(category)
+    || assessment.uncertain_skills.includes(category))
+  const expected = selected.length ? selected : ['Integrated practice']
+  if (value.steps.length !== expected.length || !value.steps.every((step, index) =>
+    step.category === expected[index] && step.order === index + 1)) return false
+  const first = value.steps[0]
+  const next = value.next_action
+  return next.category === first.category && next.order === first.order && next.title === first.title
+    && next.instruction === first.instruction && next.completion_evidence === first.completion_evidence
 }
 
 export async function assessSkillGap(goalId: number, fetcher: Fetcher = fetch): Promise<SkillGapResult> {
@@ -74,8 +124,9 @@ export async function assessSkillGap(goalId: number, fetcher: Fetcher = fetch): 
     return unexpected
   }
   if (!isObject(body)) return unexpected
-  if (response.status === 200 && hasExactKeys(body, ['skill_gap']) && isSkillGap(body.skill_gap, goalId)) {
-    return { kind: 'assessed', skillGap: body.skill_gap }
+  if (response.status === 200 && hasExactKeys(body, ['skill_gap', 'learning_path'])
+    && isSkillGap(body.skill_gap, goalId) && isLearningPath(body.learning_path, body.skill_gap)) {
+    return { kind: 'assessed', skillGap: body.skill_gap, learningPath: body.learning_path }
   }
   if (!hasExactKeys(body, ['errors']) || !isObject(body.errors)) return unexpected
 

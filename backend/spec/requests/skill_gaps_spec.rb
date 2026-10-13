@@ -2,6 +2,23 @@ require "rails_helper"
 require "net/http"
 
 RSpec.describe "Skill gap identification", type: :request do
+  def expect_learning_path(categories)
+    expect(response.parsed_body.keys).to match_array([ "skill_gap", "learning_path" ])
+    path = response.parsed_body.fetch("learning_path")
+    expect(path.keys).to match_array([ "method", "catalogue_version", "steps", "next_action" ])
+    expect(path).to include("method" => "curated", "catalogue_version" => "1")
+    expect(path.fetch("steps").map { |step| step.fetch("category") }).to eq(categories)
+    expect(path.fetch("steps").map { |step| step.fetch("order") }).to eq((1..categories.length).to_a)
+    path.fetch("steps").each do |step|
+      expect(step.keys).to match_array([ "category", "order", "title", "instruction", "completion_evidence" ])
+      %w[title instruction completion_evidence].each do |field|
+        expect(step[field]).to be_a(String)
+        expect(step[field].strip).not_to be_empty
+      end
+    end
+    expect(path.fetch("next_action")).to eq(path.fetch("steps").first)
+  end
+
   it "returns a transient AI-assisted assessment for the persisted goal and current skills" do
     goal = Goal.create!(description: "Become a backend developer")
     current_skill = CurrentSkill.create!(
@@ -36,8 +53,8 @@ RSpec.describe "Skill gap identification", type: :request do
     }.not_to change { [ Goal.count, CurrentSkill.count ] }
 
     expect(response).to have_http_status(:ok)
-    expect(response.parsed_body).to eq(
-      "skill_gap" => {
+    expect(response.parsed_body.fetch("skill_gap")).to eq(
+      {
         "goal_id" => goal.id,
         "current_skill_id" => current_skill.id,
         "profile" => "backend_development",
@@ -48,6 +65,8 @@ RSpec.describe "Skill gap identification", type: :request do
         "uncertain_skills" => [ "HTTP/API concepts" ]
       }
     )
+    expect_learning_path([ "HTTP/API concepts", "Automated testing" ])
+    expect(response.parsed_body.fetch("learning_path").fetch("steps").first.fetch("title")).to match(/clarif/i)
     expect(provider).to have_received(:classify).with(
       goal_description: goal.description,
       current_skills_description: current_skill.description
@@ -85,6 +104,7 @@ RSpec.describe "Skill gap identification", type: :request do
       expect(response).to have_http_status(status)
       expect(response.media_type).to eq("application/json")
       expect(response.parsed_body).to eq("errors" => { field => [ message ] })
+      expect(response.parsed_body).not_to have_key("learning_path")
     end
 
     it "returns 404 for an unknown goal without invoking the provider" do
@@ -115,12 +135,13 @@ RSpec.describe "Skill gap identification", type: :request do
         skills = CurrentSkill.create!(goal: supported, description: "Synthetic Ruby, SQL, Git")
         submit(supported.id)
         expect(response).to have_http_status(:ok)
-        expect(response.parsed_body).to eq("skill_gap" => {
+        expect(response.parsed_body.fetch("skill_gap")).to eq({
           "goal_id" => supported.id, "current_skill_id" => skills.id,
           "profile" => "backend_development", "profile_version" => "1", "method" => "ai_assisted",
           "identified_skills" => [ "Programming language", "SQL", "Git" ],
           "not_identified_skills" => [ "Automated testing" ], "uncertain_skills" => [ "HTTP/API concepts" ]
         })
+        expect_learning_path([ "HTTP/API concepts", "Automated testing" ])
         expect(GeminiSkillGapProvider).to have_received(:classify).with(
           goal_description: supported.description, current_skills_description: skills.description
         ).once
@@ -132,6 +153,42 @@ RSpec.describe "Skill gap identification", type: :request do
       submit(goal.id, goal: { description: "CLIENT_GOAL_REPLACEMENT" },
         current_skills: { description: "CLIENT_SKILLS_REPLACEMENT" })
       expect(response).to have_http_status(:ok)
+      expect(GeminiSkillGapProvider).to have_received(:classify).with(
+        goal_description: goal.description, current_skills_description: current_skill.description
+      ).once
+    end
+
+    it "returns integrated backend practice when every category is identified without persisting a path" do
+      current_skill
+      all_identified = classifications.transform_values { "identified" }
+      allow(GeminiSkillGapProvider).to receive(:classify).and_return(all_identified)
+      submit(goal.id)
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.fetch("skill_gap")).to eq(
+        "goal_id" => goal.id, "current_skill_id" => current_skill.id,
+        "profile" => "backend_development", "profile_version" => "1", "method" => "ai_assisted",
+        "identified_skills" => [ "Programming language", "SQL", "Git", "HTTP/API concepts", "Automated testing" ],
+        "not_identified_skills" => [], "uncertain_skills" => []
+      )
+      expect_learning_path([ "Integrated practice" ])
+      expect(response.parsed_body.fetch("learning_path").fetch("steps").first.fetch("title")).to match(/backend/i)
+      expect(GeminiSkillGapProvider).to have_received(:classify).once
+    end
+
+    it "orders a mixed path independently of provider map ordering with exactly one provider call" do
+      current_skill
+      mixed = {
+        "Automated testing" => "not_identified", "HTTP/API concepts" => "identified",
+        "SQL" => "uncertain", "Git" => "not_identified", "Programming language" => "identified"
+      }
+      allow(GeminiSkillGapProvider).to receive(:classify).and_return(mixed)
+      submit(goal.id)
+      expect(response).to have_http_status(:ok)
+      expect_learning_path([ "Git", "SQL", "Automated testing" ])
+      steps = response.parsed_body.fetch("learning_path").fetch("steps")
+      expect(steps[0].fetch("title")).not_to match(/clarif/i)
+      expect(steps[1].fetch("title")).to match(/clarif/i)
+      expect(steps[2].fetch("title")).not_to match(/clarif/i)
       expect(GeminiSkillGapProvider).to have_received(:classify).with(
         goal_description: goal.description, current_skills_description: current_skill.description
       ).once

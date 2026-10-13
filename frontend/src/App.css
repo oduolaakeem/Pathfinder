@@ -35,6 +35,13 @@ textarea:disabled { background: #f2f3ed; }
 .assessment-group { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dce0d4; }
 .assessment-group h3 { font-size: 17px; line-height: 1.5; }
 .assessment-group ul { padding-left: 24px; line-height: 1.8; }
+.learning-path { margin-top: 32px; padding-top: 24px; border-top: 1px solid #dce0d4; }
+.learning-path h3, .next-action h3 { font-size: 21px; line-height: 1.4; margin-bottom: 12px; }
+.learning-steps { padding-left: 24px; margin-top: 24px; }
+.learning-steps li { padding-left: 8px; margin-bottom: 24px; }
+.learning-steps h4, .next-action h4 { font-size: 17px; line-height: 1.5; }
+.learning-steps p, .next-action p { margin-top: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.next-action { margin-top: 24px; padding: 20px; background: #eaf0e1; border: 1px solid #cddbc3; border-radius: 12px; }
 @media (max-width: 480px) {
   .page { padding: 24px 16px 40px; }
   .brand { margin-bottom: 40px; }

@@ -98,7 +98,7 @@ Run the regression tests locally with Node.js 24's built-in test runner:
 npm test
 ```
 
-The latest completed suite has **35 Node tests passing**. Tests cover goal 500/501 and skills 2,000/2,001 Unicode-code-point boundaries, supplementary characters, mixed ASCII/Unicode text, and nonblank validation. Current-skills API tests verify the request URL/body, persisted response parsing, HTTP 400/422/404/409 handling, network failures, and malformed responses. `tests/skill-gap.test.mjs` covers the typed assessment client, exact empty-body request, strict result validation, HTTP 404/422/502/503 errors, network failures, and malformed/non-JSON responses using injected fetch without live Gemini calls.
+The latest completed suite has **42 Node tests passing**, including 25 focused assessment/path API tests. Tests cover goal/skills Unicode boundaries, validation, persisted response parsing, and safe errors. `tests/skill-gap.test.mjs` validates the combined `skill_gap` and `learning_path` envelope, exact fields, category coverage/order, contiguous numbering, fallback, next-action equality, and nonblank text bounded to 2,000 Unicode code points. Injected fetch prevents live Gemini calls. Latest backend verification passed 140 RSpec examples; frontend lint and production build passed.
 
 Run the production build locally:
 
@@ -160,10 +160,22 @@ Identified mentions do not prove competence, and not-identified categories do no
 
 Synthetic live browser acceptance passed, including loading feedback, repeated-click protection, all five categories, and limitation disclosure. Automated frontend coverage focuses on pure validation and API handling; component lifecycle, keyboard interaction, and layout still rely on manual checks. Latest completed lint and production build passed; this documentation step does not rerun them.
 
+## Curated learning path and next action
+
+PF-015 completes the current vertical slice: career goal → current skills → Gemini-assisted assessment → curated learning path → recommended next action. Gemini classifies five backend-development categories; it does not generate activities. One assessment request returns both objects, with no second Gemini or browser API request for the path.
+
+`api/skillGap.ts` returns the validated `skillGap` and `learningPath` together. The path has `method: "curated"`, `catalogue_version: "1"`, ordered `steps`, and `next_action` equal to the complete first step. `SkillGapAssessment.tsx` renders an accessible ordered list with category, title, instruction, and suggested completion evidence, followed by a highlighted starting activity.
+
+The deterministic, language-flexible catalogue orders Programming language → Git → SQL → HTTP/API concepts → Automated testing, skipping identified categories without declaring mastery. Uncertain categories invite clarification and practice. When all five categories are identified, a single integrated backend exercise is displayed. Recommendations are preliminary and informed by self-reported skills; evidence is suggested, not submitted or evaluated. No progress controls, uploads, learner-project evaluation, or verified job-readiness claims are provided.
+
+Assessment and path share one success state, reset together for a new goal, and are cleared before retry. Existing unchecked consent, explicit submission, loading controls, safe errors, and stale-response protection remain. Neither object is stored in localStorage/sessionStorage or restored after refresh.
+
+PF-015 manual browser Scenario A passed **10/10** checks and Scenario B passed **7/7**, confirming all five categories identified and the integrated-practice fallback. Failed-request retry/reset was not manually exercised; component/lifecycle automation remains a coverage gap. Remaining roadmap: PF-018 bounded evaluation foundation and PF-019 sprint review/demo and submission; advanced adaptive paths remain deferred.
+
 ## Limitations
 
 Saved goal context is held only in the current UI session. Refreshing does not restore the skills form or saved skills; persisted records remain in PostgreSQL, but retrieval and editing are deferred.
 
-Consent and assessment results are also session-only: assessments are not persisted or restored after refresh.
+Consent, assessment results, and learning paths are session-only: assessments and paths are not persisted or restored after refresh.
 
-This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not establish ownership; browser consent is not server-side authorization. Do not expose the endpoint as a production multi-user service. Only “Become a backend developer” is supported, ignoring case and surrounding whitespace. AI classifications may be inaccurate; Gemini free-tier availability and quotas may change. Learner text is transmitted to Google, so avoid sensitive or confidential information. Assessment history, retrieval/editing, learning-path generation, proficiency scoring, and production deployment are outside the current scope.
+This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not establish ownership; browser consent is not server-side authorization. Do not expose the endpoint as a production multi-user service. Only “Become a backend developer” is supported, ignoring case and surrounding whitespace. AI classifications may be inaccurate; Gemini free-tier availability and quotas may change. Learner text is transmitted to Google, so avoid sensitive or confidential information. Assessment/path history, retrieval/editing, advanced/adaptive paths, learner-project evaluation, proficiency scoring, and production deployment are outside the current scope.
