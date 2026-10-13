@@ -77,12 +77,27 @@ RSpec.describe "Skill gap logging privacy", type: :request do
   it "filters request parameters and SQL retrieval logs and returns only the approved assessment" do
     submit
     expect(response).to have_http_status(:ok)
-    expect(response.parsed_body).to eq("skill_gap" => {
+    expect(response.parsed_body.keys).to match_array([ "skill_gap", "learning_path" ])
+    expect(response.parsed_body.fetch("skill_gap")).to eq({
       "goal_id" => goal.id, "current_skill_id" => skills.id, "profile" => "backend_development",
       "profile_version" => "1", "method" => "ai_assisted",
       "identified_skills" => [ "Programming language", "SQL", "Git" ],
       "not_identified_skills" => [ "Automated testing" ], "uncertain_skills" => [ "HTTP/API concepts" ]
     })
+    path = response.parsed_body.fetch("learning_path")
+    expect(path.keys).to match_array([ "method", "catalogue_version", "steps", "next_action" ])
+    expect(path).to include("method" => "curated", "catalogue_version" => "1")
+    expect(path.fetch("steps").map { |step| step.fetch("category") }).to eq([ "HTTP/API concepts", "Automated testing" ])
+    expect(path.fetch("steps").map { |step| step.fetch("order") }).to eq([ 1, 2 ])
+    path.fetch("steps").each do |step|
+      expect(step.keys).to match_array([ "category", "order", "title", "instruction", "completion_evidence" ])
+      %w[title instruction completion_evidence].each do |field|
+        expect(step[field]).to be_a(String)
+        expect(step[field].strip).not_to be_empty
+        expect(step[field].length).to be <= 2000
+      end
+    end
+    expect(path.fetch("next_action")).to eq(path.fetch("steps").first)
     expect(request_output.string).to include("Parameters:", "[FILTERED]", "Completed 200")
     expect(sql_output.string).to include('FROM "goals"', 'FROM "current_skills"')
     expect_private
@@ -94,6 +109,7 @@ RSpec.describe "Skill gap logging privacy", type: :request do
       submit
       expect(response).to have_http_status(:bad_gateway)
       expect(response.parsed_body).to eq("errors" => { "skill_gap" => [ "invalid provider result" ] })
+      expect(response.parsed_body).not_to have_key("learning_path")
       expect_private
     end
   end
@@ -106,6 +122,7 @@ RSpec.describe "Skill gap logging privacy", type: :request do
     submit
     expect(response).to have_http_status(:service_unavailable)
     expect(response.parsed_body).to eq("errors" => { "skill_gap" => [ "provider unavailable" ] })
+    expect(response.parsed_body).not_to have_key("learning_path")
     expect_private
   end
 
@@ -119,6 +136,7 @@ RSpec.describe "Skill gap logging privacy", type: :request do
     submit
     expect(response).to have_http_status(:service_unavailable)
     expect(response.parsed_body).to eq("errors" => { "skill_gap" => [ "provider unavailable" ] })
+    expect(response.parsed_body).not_to have_key("learning_path")
     expect_private
   end
 

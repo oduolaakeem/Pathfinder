@@ -36,6 +36,8 @@ module Api
         return
       end
 
+      learning_path = LearningPathBuilder.call(classifications: classifications)
+
       render json: {
         skill_gap: {
           goal_id: goal.id,
@@ -46,7 +48,8 @@ module Api
           identified_skills: CATEGORIES.select { |category| classifications[category] == "identified" },
           not_identified_skills: CATEGORIES.select { |category| classifications[category] == "not_identified" },
           uncertain_skills: CATEGORIES.select { |category| classifications[category] == "uncertain" }
-        }
+        },
+        learning_path: learning_path
       }, status: :ok
     rescue GeminiSkillGapProvider::InvalidResponse
       render json: { errors: { skill_gap: [ "invalid provider result" ] } }, status: :bad_gateway
