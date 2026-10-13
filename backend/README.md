@@ -258,9 +258,37 @@ PF-015 has 23 builder examples, 26 assessment/path request examples, and five pr
 
 RSpec was configured in **PF-005 — RSpec / Test Foundation**.
 
+## Offline evaluation foundation (PF-018)
+
+This developer-only tool compares human-authored expected classifications with separately authored, explicitly simulated actual classifications. It is not part of the interactive learner journey. It uses the existing five categories and three labels, rejects invalid coverage and duplicate JSON keys, and returns complete comparison rows, differences, per-category counts, and aggregate totals in stable order.
+
+Files:
+
+- Evaluator: `app/services/skill_gap_evaluator.rb`
+- CLI: `script/skill_gap_evaluation.rb`
+- Annotated cases: `spec/fixtures/skill_gap_evaluation_cases.json`
+- Simulated actuals: `spec/fixtures/skill_gap_evaluation_actuals.json`
+- Regression specs: `spec/services/skill_gap_evaluator_spec.rb`
+
+Run from the repository root using the already built backend image, with network disabled and the backend source mounted read-only (PowerShell):
+
+```powershell
+docker run --rm --network none --mount "type=bind,source=$PWD/backend,target=/app/backend,readonly" -w /app/backend -e GEMINI_API_KEY= pathfinder-app timeout 60s ruby script/skill_gap_evaluation.rb
+```
+
+This needs Docker Engine and the existing image, but no application services, Rails boot, PostgreSQL, Gemini credentials, or network access. With a working local Ruby interpreter, `ruby backend/script/skill_gap_evaluation.rb` also runs from the repository root. Fixture paths are fixed relative to the script; it accepts no arbitrary paths or URLs.
+
+The CLI prints formatted JSON with `mode: "offline_simulated"`, `real_model_accuracy_measured: false`, and `agreement_basis: "simulated fixture agreement, not Gemini accuracy"`. The bundled report has **5 synthetic cases, 25 comparisons, 23 agreements (`matches`), and 2 disagreements (`mismatches`)**. Programming language, Git, and Automated testing each have 5 matches/0 mismatches; SQL and HTTP/API concepts each have 4/1. All 25 `rows` retain case ID, category, expected label, actual label, and match status; `differences` lists the two deliberately simulated disagreements.
+
+Exit status is 0 for any valid completed report, including mismatches. Invalid fixtures or execution failure produce a nonzero exit and concise predefined stderr diagnostics without stack traces or unnecessary fixture contents. No API key or learner records are read; no network calls, database operations, project evaluation, or mastery assessment occur.
+
+**Simulated fixture agreement is not a measurement of Gemini accuracy.** Human annotations can be subjective, and these five cases do not establish real-world model quality. Future model-quality evaluation requires separately obtained model outputs and an approved evaluation protocol.
+
+PF-018 verification: **25 focused evaluator examples passed**, all three new Ruby files passed syntax and focused RuboCop, and the CLI produced identical output on two runs. Full backend regression passed: **165 examples, 0 failures, 0 pending, exit code 0**. No live Gemini requests were made; only existing Rack deprecation warnings were emitted. The previously completed 140-example PF-015 suite above remains historical evidence. PF-018 is implemented awaiting final review/merge; PF-019 demo/submission preparation remains outstanding.
+
 ## Limitations
 
-This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not prove ownership. Consent is enforced in the browser UI, not by server-side authorization. Do not expose this as a production multi-user service. Learner text goes to Google's Gemini service; do not submit sensitive or confidential information. Classifications may be inaccurate and do not verify competence or job readiness. Only the supported backend-development goal is assessed. Retrieval, editing, assessment/path history, proficiency scoring, learner-project evaluation, advanced/adaptive paths, and production deployment remain deferred. Remaining roadmap: PF-018 bounded evaluation foundation and PF-019 sprint review/demo and submission.
+This is a localhost-only proof of concept with no authentication, authorization, or rate limiting. Goal IDs do not prove ownership. Consent is enforced in the browser UI, not by server-side authorization. Do not expose this as a production multi-user service. Learner text goes to Google's Gemini service; do not submit sensitive or confidential information. Classifications may be inaccurate and do not verify competence or job readiness. Only the supported backend-development goal is assessed. Retrieval, editing, assessment/path history, proficiency scoring, learner-project evaluation, advanced/adaptive paths, and production deployment remain deferred. PF-018 offline evaluation is implemented pending final review/merge; PF-019 sprint review/demo and submission remains outstanding.
 
 ## Windows Git Bash
 

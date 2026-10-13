@@ -1,0 +1,11 @@
+{
+  "mode": "offline_simulated",
+  "real_model_accuracy_measured": false,
+  "results": {
+    "explicit_evidence": {"Programming language":"identified","SQL":"identified","Git":"identified","HTTP/API concepts":"identified","Automated testing":"identified"},
+    "explicit_absence": {"Programming language":"not_identified","SQL":"not_identified","Git":"not_identified","HTTP/API concepts":"not_identified","Automated testing":"not_identified"},
+    "mixed_evidence": {"Programming language":"identified","SQL":"not_identified","Git":"identified","HTTP/API concepts":"not_identified","Automated testing":"not_identified"},
+    "ambiguous_evidence": {"Programming language":"uncertain","SQL":"identified","Git":"uncertain","HTTP/API concepts":"not_identified","Automated testing":"uncertain"},
+    "instruction_like": {"Programming language":"identified","SQL":"uncertain","Git":"identified","HTTP/API concepts":"uncertain","Automated testing":"uncertain"}
+  }
+}

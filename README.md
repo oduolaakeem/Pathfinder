@@ -460,11 +460,21 @@ Completed tickets:
 - **PF-009 — Learner Current Skills (merged into develop)**
 - **PF-010 — AI-Assisted Skill Gap Identification (merged into develop)**
 
-**PF-015 — Curated Learning Path and Recommended Next Action is implemented on `feature/PF-015-learning-path`, awaiting final verification and merge.**
+**PF-015 — Curated Learning Path and Recommended Next Action is implemented and merged into develop.**
 
 Latest completed verification: **140 backend RSpec examples and 42 frontend tests, all passing**; frontend lint and production build passed. The full backend run includes the previously pending PF-010 provider verification. Synthetic live Gemini integration previously passed. PF-015 manual browser Scenario A passed **10/10** checks and Scenario B passed **7/7**, including all five categories identified and the integrated-practice fallback. Failed-request retry/reset was not manually exercised. Coverage includes builder ordering and fallback, request contracts, provider parsing/failures, privacy logging, and strict frontend response validation. Component/lifecycle automation and concurrent duplicate skills requests remain gaps. Pre-existing repository Ruby style offenses remain outside PF-015 scope; the builder spec's focused RuboCop check passed.
 
-Remaining roadmap: **PF-018 — bounded evaluation foundation** and **PF-019 — sprint review/demo and submission**. Advanced adaptive paths and evaluation of learner projects remain deferred.
+### PF-018 — Offline evaluation foundation
+
+Implemented on `feature/PF-018-evaluation-foundation`, awaiting final review and merge. This developer tool is separate from the interactive learner journey. Five synthetic cases have explicit human-authored expected labels and rationales; a separate fixture supplies explicitly simulated actual classifications, including deliberate disagreements.
+
+The evaluator compares the five established skill categories deterministically, reporting every expected/actual comparison, per-category counts, and differences. Bundled results are **5 cases, 25 comparisons, 23 agreements, and 2 disagreements**, labelled `offline_simulated` with `real_model_accuracy_measured: false`.
+
+**Simulated fixture agreement is not a measurement of Gemini accuracy.** The cases are a small, subjective annotation set, not evidence of real-world AI quality or model performance. Evaluation makes no Gemini requests or database operations and does not evaluate learner projects or verify mastery. See the [offline CLI instructions](backend/README.md#offline-evaluation-foundation-pf-018).
+
+PF-018 verification: 25 focused evaluator RSpec examples passed; Ruby syntax and focused RuboCop passed; CLI output was identical on two runs. Full backend regression passed: **165 examples, 0 failures, 0 pending, exit code 0**. No live Gemini requests were made; only existing Rack deprecation warnings were emitted. The earlier PF-015 results above remain separate historical verification evidence.
+
+Remaining roadmap: **PF-019 — sprint review/demo and submission**. Advanced adaptive paths and evaluation of learner projects remain deferred.
 
 Repository engineering instructions are in `AGENTS.md`.
 
