@@ -98,7 +98,7 @@ Run the regression tests locally with Node.js 24's built-in test runner:
 npm test
 ```
 
-The latest completed suite has **42 Node tests passing**, including 25 focused assessment/path API tests. Tests cover goal/skills Unicode boundaries, validation, persisted response parsing, and safe errors. `tests/skill-gap.test.mjs` validates the combined `skill_gap` and `learning_path` envelope, exact fields, category coverage/order, contiguous numbering, fallback, next-action equality, and nonblank text bounded to 2,000 Unicode code points. Injected fetch prevents live Gemini calls. Latest backend verification passed 140 RSpec examples; frontend lint and production build passed.
+The latest completed suite has **42 Node tests passing**, including 25 focused assessment/path API tests. Tests cover goal/skills Unicode boundaries, validation, persisted response parsing, and safe errors. `tests/skill-gap.test.mjs` validates the combined `skill_gap` and `learning_path` envelope, exact fields, category coverage/order, contiguous numbering, fallback, next-action equality, and nonblank text bounded to 2,000 Unicode code points. Injected fetch prevents live Gemini calls. Latest backend verification passed 165 RSpec examples with 0 failures and 0 pending; frontend lint and production build passed.
 
 Run the production build locally:
 
@@ -170,9 +170,11 @@ The deterministic, language-flexible catalogue orders Programming language → G
 
 Assessment and path share one success state, reset together for a new goal, and are cleared before retry. Existing unchecked consent, explicit submission, loading controls, safe errors, and stale-response protection remain. Neither object is stored in localStorage/sessionStorage or restored after refresh.
 
-PF-015 manual browser Scenario A passed **10/10** checks and Scenario B passed **7/7**, confirming all five categories identified and the integrated-practice fallback. Failed-request retry/reset was not manually exercised; component/lifecycle automation remains a coverage gap. Remaining roadmap: PF-018 bounded evaluation foundation and PF-019 sprint review/demo and submission; advanced adaptive paths remain deferred.
+PF-015 manual browser Scenario A passed **10/10** checks and Scenario B passed **7/7**, confirming all five categories identified and the integrated-practice fallback. Failed-request retry/reset was not manually exercised; component/lifecycle automation remains a coverage gap. PF-018 offline evaluation is implemented and merged into develop, separate from the learner interface. Remaining roadmap: PF-019 sprint review/demo and submission; advanced adaptive paths remain deferred.
 
 ## Limitations
+
+The [submission package](../docs/PF-019-submission.md) addresses **Learning That Stays With You**, primary Track 3 and secondary Track 2 design alignment, with current support/limitations/future work for all seven operating constraints. Accessible controls and clear next actions do not establish measured retention or comprehensive accessibility. The interface remains English-only with no local-opportunity integration. This is an invention-sprint proof of concept; the official October 12–16, 2026 window does not yet have a confirmed closing time/timezone, destination/platform, or mandatory media format.
 
 Saved goal context is held only in the current UI session. Refreshing does not restore the skills form or saved skills; persisted records remain in PostgreSQL, but retrieval and editing are deferred.
 
