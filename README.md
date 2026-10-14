@@ -462,11 +462,11 @@ Completed tickets:
 
 **PF-015 — Curated Learning Path and Recommended Next Action is implemented and merged into develop.**
 
-Latest completed verification: **140 backend RSpec examples and 42 frontend tests, all passing**; frontend lint and production build passed. The full backend run includes the previously pending PF-010 provider verification. Synthetic live Gemini integration previously passed. PF-015 manual browser Scenario A passed **10/10** checks and Scenario B passed **7/7**, including all five categories identified and the integrated-practice fallback. Failed-request retry/reset was not manually exercised. Coverage includes builder ordering and fallback, request contracts, provider parsing/failures, privacy logging, and strict frontend response validation. Component/lifecycle automation and concurrent duplicate skills requests remain gaps. Pre-existing repository Ruby style offenses remain outside PF-015 scope; the builder spec's focused RuboCop check passed.
+PF-015 historical verification: **140 backend RSpec examples and 42 frontend tests, all passing**; frontend lint and production build passed. The full backend run includes the previously pending PF-010 provider verification. Synthetic live Gemini integration previously passed. PF-015 manual browser Scenario A passed **10/10** checks and Scenario B passed **7/7**, including all five categories identified and the integrated-practice fallback. Failed-request retry/reset was not manually exercised. Coverage includes builder ordering and fallback, request contracts, provider parsing/failures, privacy logging, and strict frontend response validation. Component/lifecycle automation and concurrent duplicate skills requests remain gaps. Pre-existing repository Ruby style offenses remain outside PF-015 scope; the builder spec's focused RuboCop check passed.
 
 ### PF-018 — Offline evaluation foundation
 
-Implemented on `feature/PF-018-evaluation-foundation`, awaiting final review and merge. This developer tool is separate from the interactive learner journey. Five synthetic cases have explicit human-authored expected labels and rationales; a separate fixture supplies explicitly simulated actual classifications, including deliberate disagreements.
+PF-018 is implemented and merged into develop. This developer tool is separate from the interactive learner journey. Five synthetic cases have explicit human-authored expected labels and rationales; a separate fixture supplies explicitly simulated actual classifications, including deliberate disagreements.
 
 The evaluator compares the five established skill categories deterministically, reporting every expected/actual comparison, per-category counts, and differences. Bundled results are **5 cases, 25 comparisons, 23 agreements, and 2 disagreements**, labelled `offline_simulated` with `real_model_accuracy_measured: false`.
 
@@ -475,6 +475,8 @@ The evaluator compares the five established skill categories deterministically, 
 PF-018 verification: 25 focused evaluator RSpec examples passed; Ruby syntax and focused RuboCop passed; CLI output was identical on two runs. Full backend regression passed: **165 examples, 0 failures, 0 pending, exit code 0**. No live Gemini requests were made; only existing Rack deprecation warnings were emitted. The earlier PF-015 results above remain separate historical verification evidence.
 
 Remaining roadmap: **PF-019 — sprint review/demo and submission**. Advanced adaptive paths and evaluation of learner projects remain deferred.
+
+Preparation materials: [submission package](docs/PF-019-submission.md) and [four-minute demo guide](docs/PF-019-demo.md). Official theme: **Learning That Stays With You**; primary **Track 3 — Guidance, Pathways & Opportunity**, with secondary **Track 2 — Engagement & Staying in the Learning Journey** design alignment, not demonstrated retention. This is an invention-sprint proof of concept. The submission package maps all seven operating constraints to current support, limitations, and future work. Official submission window: **October 12–16, 2026**; closing time/timezone, destination/platform, and mandatory media formats remain **UNCONFIRMED**. A short presentation rehearsal completed with 8/8 user-confirmed checks passed in one minute, using previous live browser acceptance evidence; no fresh Gemini assessment occurred. The optional extended four-minute demo has not been separately verified.
 
 Repository engineering instructions are in `AGENTS.md`.
 
