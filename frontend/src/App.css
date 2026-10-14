@@ -32,6 +32,8 @@ textarea:disabled { background: #f2f3ed; }
 .assessment-consent input:focus-visible { outline: 3px solid #578346; outline-offset: 3px; }
 .assessment-card button:disabled { cursor: not-allowed; }
 .assessment-results { margin-top: 24px; }
+.progression-heading { scroll-margin-top: 24px; }
+.progression-heading:focus { outline: 3px solid #578346; outline-offset: 5px; }
 .assessment-group { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dce0d4; }
 .assessment-group h3 { font-size: 17px; line-height: 1.5; }
 .assessment-group ul { padding-left: 24px; line-height: 1.8; }
