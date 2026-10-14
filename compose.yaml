@@ -9,6 +9,8 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - .:/app
+    tmpfs:
+      - /app/backend/tmp/pids
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
