@@ -15,6 +15,12 @@ The backend validates and persists learner goals and current technical skills in
 
 Development and test environments use PostgreSQL through Docker Compose.
 
+### Development Rails PID storage
+
+The Compose app service mounts `/app/backend/tmp/pids` as container-private temporary storage (`tmpfs`). Rails PID files are discarded when the container stops, preventing stale files from surviving container shutdown and restart. The mount masks this directory inside the container; it does not delete or change existing files in the host project directory.
+
+Applying this configuration requires recreating only the app container; restarting an existing container does not apply a new mount. No image rebuild or database change is required. This is a development configuration, not a production deployment guarantee. A future non-root production configuration must provide appropriate runtime-directory permissions. Restarting Rails within a still-running container does not clear the temporary directory.
+
 ## Database
 
 Pathfinder uses PostgreSQL.
