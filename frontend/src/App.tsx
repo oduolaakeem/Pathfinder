@@ -5,6 +5,7 @@ import type { Goal } from './api/goals'
 import { countGoalCharacters, GOAL_DESCRIPTION_LIMIT, validateGoalDescription } from './goalDescription'
 import './App.css'
 import CurrentSkillsForm from './CurrentSkillsForm'
+import { beginProgression } from './guidedProgression'
 
 function App() {
   const [description, setDescription] = useState('')
@@ -14,6 +15,13 @@ function App() {
   const [savedGoal, setSavedGoal] = useState<Goal | null>(null)
   const submitting = useRef(false)
   const field = useRef<HTMLTextAreaElement>(null)
+  const nextSection = useRef<HTMLDivElement>(null)
+  const progression = useRef<ReturnType<typeof beginProgression> | null>(null)
+
+  useEffect(() => {
+    if (savedGoal) progression.current?.finish(nextSection.current?.querySelector('h2') ?? null)
+  }, [savedGoal])
+  useEffect(() => () => progression.current?.cancel(), [])
 
   useEffect(() => {
     if (fieldError && !saving) field.current?.focus()
@@ -32,14 +40,17 @@ function App() {
     }
 
     submitting.current = true
+    progression.current = beginProgression(event.currentTarget)
     setSaving(true)
     try {
       const result = await createGoal(description)
       if (result.kind === 'saved') {
         setSavedGoal(result.goal)
       } else if (result.kind === 'validation') {
+        progression.current?.cancel()
         setFieldError(result.messages.map((message) => `Career goal ${message}`).join('. '))
       } else {
+        progression.current?.cancel()
         setRequestError(result.message)
       }
     } finally {
@@ -98,7 +109,7 @@ function App() {
           </section>
         )}
       </div>
-      {savedGoal && <CurrentSkillsForm key={savedGoal.id} goalId={savedGoal.id} />}
+      <div ref={nextSection}>{savedGoal && <CurrentSkillsForm key={savedGoal.id} goalId={savedGoal.id} />}</div>
     </main>
   )
 }

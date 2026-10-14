@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { assessSkillGap } from './api/skillGap'
 import type { SkillGapAssessment as AssessmentResult } from './api/skillGap'
+import { beginProgression } from './guidedProgression'
 
 export default function SkillGapAssessment({ goalId }: { goalId: number }) {
   const [consent, setConsent] = useState(false)
@@ -11,16 +12,23 @@ export default function SkillGapAssessment({ goalId }: { goalId: number }) {
   const [assessment, setAssessment] = useState<AssessmentResult | null>(null)
   const submitting = useRef(false)
   const requestVersion = useRef(0)
+  const resultsHeading = useRef<HTMLHeadingElement>(null)
+  const progression = useRef<ReturnType<typeof beginProgression> | null>(null)
+  useEffect(() => {
+    if (assessment) progression.current?.finish(resultsHeading.current)
+  }, [assessment])
 
   useEffect(() => () => {
     // A changed goal unmounts this section; ignore any response still in flight.
     requestVersion.current++
+    progression.current?.cancel()
   }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!consent || submitting.current || assessment || !recoverable) return
     submitting.current = true
+    progression.current = beginProgression(event.currentTarget)
     const version = ++requestVersion.current
     setLoading(true)
     setError('')
@@ -31,6 +39,7 @@ export default function SkillGapAssessment({ goalId }: { goalId: number }) {
       if (result.kind === 'assessed') {
         setAssessment({ skillGap: result.skillGap, learningPath: result.learningPath })
       } else {
+        progression.current?.cancel()
         setError(result.message)
         setRecoverable(result.status !== 404 && result.status !== 422)
       }
@@ -45,7 +54,7 @@ export default function SkillGapAssessment({ goalId }: { goalId: number }) {
   return (
     <section className="goal-card assessment-card" aria-labelledby="assessment-heading">
       <p className="eyebrow">Understand your next steps</p>
-      <h2 id="assessment-heading">AI skill-gap assessment</h2>
+      <h2 id="assessment-heading" tabIndex={-1} className="progression-heading">AI skill-gap assessment</h2>
       <div id="assessment-disclosure" className="hint">
         <p>Pathfinder sends your saved career goal and current-skills description to Google’s Gemini AI service for analysis. Do not submit sensitive or confidential information.</p>
         <p>This is a preliminary interpretation of your description, not a verification of skill proficiency or job readiness.</p>
@@ -77,6 +86,7 @@ export default function SkillGapAssessment({ goalId }: { goalId: number }) {
       </p>
       {assessment && (
         <div className="assessment-results">
+          <h3 ref={resultsHeading} tabIndex={-1} className="progression-heading">Your assessment results</h3>
           <p className="eyebrow">Backend development · Profile version {assessment.skillGap.profile_version}</p>
           <p className="hint">“Not identified” does not necessarily mean you lack a skill. Identified mentions do not prove competence or mastery. No proficiency score is provided.</p>
           {[

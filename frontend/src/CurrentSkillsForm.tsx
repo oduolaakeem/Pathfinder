@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { createCurrentSkills } from './api/currentSkills'
 import type { CurrentSkills } from './api/currentSkills'
 import SkillGapAssessment from './SkillGapAssessment'
+import { beginProgression } from './guidedProgression'
 import {
   countSkillCharacters,
   CURRENT_SKILLS_DESCRIPTION_LIMIT,
@@ -18,6 +19,12 @@ export default function CurrentSkillsForm({ goalId }: { goalId: number }) {
   const [alreadySubmitted, setAlreadySubmitted] = useState(false)
   const submitting = useRef(false)
   const field = useRef<HTMLTextAreaElement>(null)
+  const nextSection = useRef<HTMLDivElement>(null)
+  const progression = useRef<ReturnType<typeof beginProgression> | null>(null)
+  useEffect(() => {
+    if (savedSkills) progression.current?.finish(nextSection.current?.querySelector('h2') ?? null)
+  }, [savedSkills])
+  useEffect(() => () => progression.current?.cancel(), [])
 
   useEffect(() => {
     if (fieldError && !saving) field.current?.focus()
@@ -35,14 +42,17 @@ export default function CurrentSkillsForm({ goalId }: { goalId: number }) {
     }
 
     submitting.current = true
+    progression.current = beginProgression(event.currentTarget)
     setSaving(true)
     try {
       const result = await createCurrentSkills(goalId, description)
       if (result.kind === 'saved') {
         setSavedSkills(result.currentSkills)
       } else if (result.kind === 'validation') {
+        progression.current?.cancel()
         setFieldError(result.messages.map((message) => `Skills description ${message}`).join('. '))
       } else {
+        progression.current?.cancel()
         setRequestError(result.message)
         if (result.status === 409) setAlreadySubmitted(true)
       }
@@ -56,7 +66,7 @@ export default function CurrentSkillsForm({ goalId }: { goalId: number }) {
     <>
     <section className="goal-card skills-card" aria-labelledby="skills-heading">
       <p className="eyebrow">Your next step</p>
-      <h2 id="skills-heading">Your current technical skills</h2>
+      <h2 id="skills-heading" tabIndex={-1} className="progression-heading">Your current technical skills</h2>
       {!savedSkills && (
         <form onSubmit={handleSubmit} noValidate aria-busy={saving}>
           <label htmlFor="skills-description">Current technical skills</label>
@@ -94,7 +104,7 @@ export default function CurrentSkillsForm({ goalId }: { goalId: number }) {
         )}
       </div>
     </section>
-    {savedSkills && <SkillGapAssessment key={savedSkills.goal_id} goalId={savedSkills.goal_id} />}
+    <div ref={nextSection}>{savedSkills && <SkillGapAssessment key={savedSkills.goal_id} goalId={savedSkills.goal_id} />}</div>
     </>
   )
 }
