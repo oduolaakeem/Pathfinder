@@ -105,7 +105,6 @@ function App() {
             <p className="eyebrow">Goal saved</p>
             <h2 id="saved-heading">Your destination is set.</h2>
             <p className="saved-description">{savedGoal.description}</p>
-            <p className="hint">Saved goal #{savedGoal.id}</p>
           </section>
         )}
       </div>
