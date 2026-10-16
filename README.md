@@ -146,6 +146,8 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -w /app/backend app bin/rails db:prep
 docker compose up -d app frontend
 ```
 
+For Gemini-enabled Rails creation or recreation, supply the private `.env.gemini` file or equivalent securely supplied environment variables. Omitting configuration can produce assessment HTTP 503 failures. To resume existing configured containers without recreation, use `docker compose start`. See the [authoritative startup and recovery procedure](backend/README.md#secure-local-gemini-configuration).
+
 Open the React interface at [http://localhost:5173/](http://localhost:5173/). Rails runs at [http://localhost:3000/](http://localhost:3000/), with a health check at `/up`. Both published ports are restricted to host loopback. If PostgreSQL is still starting, wait until it is ready before running `db:prepare`.
 
 The command examples use Git Bash syntax. In PowerShell, omit `MSYS_NO_PATHCONV=1`; it is only needed for Git Bash path conversion.
@@ -256,6 +258,8 @@ Start the frontend development server:
 ```bash
 docker compose up -d app frontend
 ```
+
+This generic command may create or recreate Rails. For Gemini-enabled use, supply `.env.gemini` or equivalent secure environment variables; omission can cause assessment HTTP 503 failures. Use `docker compose start` to resume existing configured containers, and follow the [backend startup/recovery procedure](backend/README.md#secure-local-gemini-configuration) when configuration must be applied.
 
 Open the application in your browser:
 
