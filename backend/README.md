@@ -87,6 +87,8 @@ After preparing the database, start the development server from the repository r
 docker compose up -d app
 ```
 
+For Gemini-enabled Rails creation or recreation, supply the private `.env.gemini` file or equivalent securely supplied environment variables. Omitting configuration can cause assessment HTTP 503 failures. To resume an existing configured container without recreation, use `docker compose start app`. Follow the [secure startup and recovery procedure](#secure-local-gemini-configuration) below.
+
 Rails is available at http://localhost:3000/ with a health check at `/up`. Its host port is restricted to loopback.
 
 Verify the Rails version:
@@ -200,12 +202,42 @@ The success envelope has exactly `skill_gap` and `learning_path`. The path conta
 
 Privately create `.env.gemini` at the repository root with `GEMINI_API_KEY` and `GEMINI_MODEL=gemini-3.5-flash-lite`. The key must remain local: do not commit, print, or disclose it. Git ignores this file and Docker build exclusions cover `.env` and `.env.*`. Compose forwards Gemini variables only to the Rails service; they are never frontend configuration.
 
-After ordinary database setup, run from the repository root:
+Run all commands below from the repository root. The private environment file must already exist unless equivalent variables are securely supplied through the shell. `--env-file` supplies Compose interpolation values; the explicit `GEMINI_API_KEY` mapping in the app service delivers the key to Rails. The frontend does not receive it. Creating or recreating Rails without this configuration can replace a working container with one missing its key, causing assessment HTTP 503 failures.
+
+**A. Resume existing configured containers without recreation:**
+
+```bash
+docker compose start
+```
+
+This preserves the containers' existing environment configuration. It does not create missing containers, load changed environment values, or repair missing Gemini configuration. Ensure PostgreSQL is ready before using Rails. If only Rails needs starting, use `docker compose start app`.
+
+**B. Create or update Rails with Gemini configuration:** after ordinary database setup, with PostgreSQL running and ready:
 
 ```bash
 docker compose --env-file .env.gemini config --quiet
-docker compose --env-file .env.gemini up -d app frontend
+docker compose --env-file .env.gemini up -d --no-deps --no-build app
 ```
+
+`--no-build` assumes the required backend image already exists; `--no-deps` leaves PostgreSQL and frontend untouched. `up` may recreate app when its configuration differs. Use procedure A when merely resuming a healthy configured container.
+
+**C. Recover confirmed missing configuration:** recreate only Rails using the same private configuration:
+
+```bash
+docker compose --env-file .env.gemini config --quiet
+docker compose --env-file .env.gemini up -d --no-deps --no-build --force-recreate app
+```
+
+This retains the existing PostgreSQL volume and the PF-021 app PID tmpfs mount. No migration, database preparation, host PID deletion, or volume removal is needed for this recovery. It does not start or recreate the frontend.
+
+After startup, check PostgreSQL readiness and Rails health using bounded checks (PowerShell examples):
+
+```powershell
+docker exec pathfinder-db-1 timeout 15s pg_isready -h 127.0.0.1 -p 5432 -U postgres
+Invoke-WebRequest -Uri http://127.0.0.1:3000/up -TimeoutSec 30 -UseBasicParsing | Select-Object StatusCode
+```
+
+Allow a bounded boot period; stop and diagnose failures rather than repeatedly recreating containers. Verify configuration with presence-only YES/NO checks, never by displaying keys, lengths, fingerprints, or resolved environment values. HTTP health does not prove Gemini authentication, quota, or provider availability. A live assessment is a separate, explicitly consented learner action through the interface; startup and health checks do not authorize one, and failures must not trigger automatic assessment retries.
 
 Use `--quiet` when validating configuration to avoid printing resolved credentials. Compose and the provider default to `gemini-3.5-flash-lite`; `GEMINI_MODEL` can override it. Model access and free-tier quotas are project-dependent and may change.
 

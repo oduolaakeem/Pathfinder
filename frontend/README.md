@@ -68,6 +68,8 @@ After preparing the database as described in the [root README](../README.md#dock
 docker compose up -d app frontend
 ```
 
+This generic command may create or recreate Rails. Gemini-enabled Rails creation/recreation requires the private `.env.gemini` file or equivalent securely supplied environment variables; omission can cause assessment HTTP 503 failures. Use `docker compose start` to resume existing configured containers without recreation. See the [authoritative backend startup and recovery procedure](../backend/README.md#secure-local-gemini-configuration); Gemini credentials remain backend-only.
+
 Open http://localhost:5173/ in a browser.
 
 Check the service status:
